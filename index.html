@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Novelty Fun Socks — Wholesale Order Form</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <img src="images/image1.png" class="brand-logo" alt="Terra Nova" />
+        <div class="brand-text">
+          <h1>Terra Nova</h1>
+          <span class="brand-sub">Wholesale Order Form &middot; Novelty Fun Socks 6-Pack Range</span>
+        </div>
+      </div>
+      <span class="season-tag">2026 Collection</span>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <main class="catalog">
+      <div class="catalog-intro">
+        <h2>Product Catalogue</h2>
+        <p>All prices shown per 6-pair counter display unit. Enter quantities in the last column.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="product-table" id="productTable">
+          <thead>
+            <tr>
+              <th class="col-product">Product</th>
+              <th class="col-barcode">Barcode</th>
+              <th class="col-sku">SKU</th>
+              <th class="col-srp">SRP</th>
+              <th class="col-margin">Profit&nbsp;%</th>
+              <th class="col-wholesale">Wholesale</th>
+              <th class="col-qty">Order Qty (Displays)</th>
+            </tr>
+          </thead>
+          <tbody id="productBody"></tbody>
+        </table>
+      </div>
+    </main>
+
+    <aside class="order-panel">
+      <div class="panel-sticky">
+
+        <div class="panel-head">
+          <h2>Order Summary</h2>
+          <button class="btn-clear" id="btnClear">Clear All</button>
+        </div>
+
+        <div class="panel-empty" id="panelEmpty">
+          <div class="empty-icon">🛒</div>
+          <p>Your order is empty.<br>Enter quantities above to get started.</p>
+        </div>
+
+        <ul class="item-list" id="itemList" hidden></ul>
+
+        <div class="totals-section" id="totalsSection" hidden>
+          <div class="totals-grid">
+            <span>Total Displays</span>      <strong id="tTotalPacks">0</strong>
+            <span>Total Pairs</span>         <strong id="tTotalPairs">0</strong>
+            <span>Wholesale Value</span>     <strong id="tWholesale">$0.00</strong>
+            <span class="srp-label">Retail Value (SRP)</span>
+                                             <strong class="srp-value" id="tRetail">$0.00</strong>
+          </div>
+        </div>
+
+        <button class="btn-submit" id="btnSubmit" hidden>Submit Order &rarr;</button>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Image lightbox -->
+  <dialog class="lightbox" id="lightbox">
+    <div class="lightbox-inner">
+      <button class="lightbox-close" id="lightboxClose" aria-label="Close">&times;</button>
+      <img class="lightbox-img" id="lightboxImg" src="" alt="" />
+      <p class="lightbox-caption" id="lightboxCaption"></p>
+    </div>
+  </dialog>
+
+  <!-- Submit / confirmation dialog -->
+  <dialog class="confirm-dialog" id="confirmDialog">
+    <div class="dialog-head">
+      <h2 id="dialogTitle">Review Order</h2>
+      <button class="dialog-close" id="dialogClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="dialog-success" id="dialogSuccess" hidden>
+      <span class="success-icon">&#10003;</span>
+      Order submitted — a confirmation has been sent to mtlaibaker@gmail.com
+    </div>
+    <div class="dialog-body" id="dialogBody"></div>
+    <!-- Footer: review state -->
+    <div class="dialog-foot" id="footReview">
+      <button class="btn-cancel-order" id="btnCancelOrder">Cancel</button>
+      <button class="btn-confirm-submit" id="btnConfirmSubmit">Confirm &amp; Submit Order</button>
+    </div>
+    <!-- Footer: confirmed state -->
+    <div class="dialog-foot" id="footConfirmed" hidden>
+      <button class="btn-csv" id="btnCSV">Download CSV</button>
+      <button class="btn-print" id="btnPrint">Save as PDF</button>
+      <button class="btn-new-order" id="btnNewOrder">Start New Order</button>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
