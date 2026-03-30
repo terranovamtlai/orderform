@@ -1,86 +1,103 @@
 /* ============================================================
    CONFIGURATION
    ============================================================ */
-const CURRENCY       = '$';
-const PAIRS_PER_PACK = 6;
+const CURRENCY = '$';
 const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyLHoKCqkTmzZgpHmwrRhB6fggm8Ua6py7_H5nY6qpyD9AzcMxTqdpD_Pb4iWb4TD1t/exec';
 
 /* ============================================================
    PRODUCT DATA
-   - srp:       Suggested Retail Price per 6-pair counter display
-   - wholesale: Dealer/wholesale price per display
-   Pricing source: Terra Nova wholesale catalogue 2026
+   - srp:          Suggested Retail Price per minimum order unit
+   - wholesale:    Dealer price per minimum order unit
+   - orderUnit:    What clients order in  (display / case / pack / …)
+   - unitsPerOrder How many individual units are in one order unit
+   - unitLabel:    Name for individual units  (pairs / units / …)
+   The description shown on the row is auto-generated:
+     "1 {orderUnit} = {unitsPerOrder} {unitLabel}"
    ============================================================ */
 const products = [
   {
     id: 1,
     name: 'Bacon Socks',
-    desc: '6-Pair Counter Display',
     barcode: '644197322967',
     sku: '687 0362',
     srp: 15.99,
     wholesale: 11.90,
     img: 'images/image2.png',
+    orderUnit: 'display',
+    unitsPerOrder: 6,
+    unitLabel: 'pairs',
   },
   {
     id: 2,
     name: 'Ramen Instant Socks',
-    desc: '6-Pair Counter Display',
     barcode: '644197322967',
     sku: '687 0362',
     srp: 15.99,
     wholesale: 11.90,
     img: 'images/image3.png',
+    orderUnit: 'display',
+    unitsPerOrder: 6,
+    unitLabel: 'pairs',
   },
   {
     id: 3,
     name: 'Beef Jerky Socks',
-    desc: '6-Pair Counter Display',
     barcode: '644197322967',
     sku: '687 0362',
     srp: 15.99,
     wholesale: 11.90,
     img: 'images/image4.png',
+    orderUnit: 'display',
+    unitsPerOrder: 6,
+    unitLabel: 'pairs',
   },
   {
     id: 4,
     name: 'Greatest Hits Vinyl Record Socks',
-    desc: '6-Pair Counter Display',
     barcode: '644197322967',
     sku: '687 0362',
     srp: 15.99,
     wholesale: 11.90,
     img: 'images/image7.png',
+    orderUnit: 'display',
+    unitsPerOrder: 6,
+    unitLabel: 'pairs',
   },
   {
     id: 5,
     name: 'Burger Socks',
-    desc: '6-Pair Counter Display',
     barcode: '644197322967',
     sku: '687 0362',
     srp: 15.99,
     wholesale: 11.90,
     img: 'images/image8.png',
+    orderUnit: 'display',
+    unitsPerOrder: 6,
+    unitLabel: 'pairs',
   },
   {
     id: 6,
     name: 'Pickles Socks',
-    desc: '6-Pair Counter Display',
     barcode: '644197322967',
     sku: '687 0362',
     srp: 15.99,
     wholesale: 11.90,
     img: 'images/image9.png',
+    orderUnit: 'display',
+    unitsPerOrder: 6,
+    unitLabel: 'pairs',
   },
   {
     id: 7,
     name: 'Socks With Hops',
-    desc: '6-Pair Counter Display',
     barcode: '644197322967',
     sku: '687 0362',
     srp: 15.99,
     wholesale: 11.90,
     img: 'images/image11.png',
+    orderUnit: 'display',
+    unitsPerOrder: 6,
+    unitLabel: 'pairs',
   },
 ];
 
@@ -111,7 +128,7 @@ function renderProducts() {
           <img class="product-img" src="${p.img}" alt="${p.name}" loading="lazy" />
           <div>
             <div class="product-name">${p.name}</div>
-            <div class="product-desc">${p.desc}</div>
+            <div class="product-desc">1 ${p.orderUnit} = ${p.unitsPerOrder} ${p.unitLabel}</div>
           </div>
         </div>
       </td>
@@ -129,6 +146,7 @@ function renderProducts() {
                   aria-label="Order quantity for ${p.name}" />
           <button class="qty-btn btn-inc" data-id="${p.id}" aria-label="Increase quantity">+</button>
         </div>
+        <div class="unit-label">${p.orderUnit}s</div>
       </td>
     </tr>
   `).join('');
@@ -160,28 +178,30 @@ function updateSummary() {
   totalsSection.hidden = false;
   btnSubmit.hidden     = false;
 
-  let totalPacks = 0, totalWholesale = 0, totalRetail = 0;
+  let totalOrderUnits = 0, totalIndividualUnits = 0, totalWholesale = 0, totalRetail = 0;
 
   const listHTML = activeItems.map(p => {
-    const qty  = order[p.id];
+    const qty   = order[p.id];
+    const units = qty * p.unitsPerOrder;
     const lineW = qty * p.wholesale;
     const lineS = qty * p.srp;
-    totalPacks     += qty;
-    totalWholesale += lineW;
-    totalRetail    += lineS;
+    totalOrderUnits      += qty;
+    totalIndividualUnits += units;
+    totalWholesale       += lineW;
+    totalRetail          += lineS;
     return `
       <li>
         <span class="item-name">${p.name}</span>
         <span class="item-value">${fmt(lineW)}</span>
-        <span class="item-detail">${qty} display${qty !== 1 ? 's' : ''} &times; ${fmt(p.wholesale)}</span>
+        <span class="item-detail">${qty} ${p.orderUnit}${qty !== 1 ? 's' : ''} &middot; ${units} ${p.unitLabel}</span>
       </li>
     `;
   }).join('');
 
   itemList.innerHTML = listHTML;
 
-  document.getElementById('tTotalPacks').textContent = totalPacks;
-  document.getElementById('tTotalPairs').textContent = totalPacks * PAIRS_PER_PACK;
+  document.getElementById('tTotalPacks').textContent = totalOrderUnits;
+  document.getElementById('tTotalPairs').textContent = totalIndividualUnits;
   document.getElementById('tWholesale').textContent  = fmt(totalWholesale);
   document.getElementById('tRetail').textContent     = fmt(totalRetail);
 }
@@ -262,27 +282,29 @@ let confirmedOrder = null;
 
 function buildOrderData() {
   const lines = [];
-  let totalDisplays = 0, totalWholesale = 0, totalRetail = 0;
+  let totalOrderUnits = 0, totalIndividualUnits = 0, totalWholesale = 0, totalRetail = 0;
   products.forEach(p => {
     const qty = order[p.id] || 0;
     if (!qty) return;
+    const units = qty * p.unitsPerOrder;
     const lineW = qty * p.wholesale;
     const lineS = qty * p.srp;
-    totalDisplays  += qty;
-    totalWholesale += lineW;
-    totalRetail    += lineS;
-    lines.push({ p, qty, lineW, lineS });
+    totalOrderUnits      += qty;
+    totalIndividualUnits += units;
+    totalWholesale       += lineW;
+    totalRetail          += lineS;
+    lines.push({ p, qty, units, lineW, lineS });
   });
-  return { lines, totalDisplays, totalWholesale, totalRetail };
+  return { lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail };
 }
 
-function buildDialogBodyHTML({ lines, totalDisplays, totalWholesale, totalRetail }) {
-  const rows = lines.map(({ p, qty, lineW }) => `
+function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail }) {
+  const rows = lines.map(({ p, qty, units, lineW }) => `
     <tr>
       <td>${p.name}</td>
       <td style="font-family:monospace;font-size:.78rem">${p.sku}</td>
-      <td style="text-align:center;font-weight:700">${qty}</td>
-      <td style="text-align:center">${qty * PAIRS_PER_PACK}</td>
+      <td style="text-align:center;font-weight:700">${qty} <small style="font-weight:400;color:#718096">${p.orderUnit}${qty !== 1 ? 's' : ''}</small></td>
+      <td style="text-align:center">${units} <small style="color:#718096">${p.unitLabel}</small></td>
       <td style="text-align:right">${fmt(p.wholesale)}</td>
       <td style="text-align:right;font-weight:700">${fmt(lineW)}</td>
     </tr>
@@ -294,8 +316,8 @@ function buildDialogBodyHTML({ lines, totalDisplays, totalWholesale, totalRetail
         <tr>
           <th>Product</th>
           <th>SKU</th>
-          <th style="text-align:center">Displays</th>
-          <th style="text-align:center">Pairs</th>
+          <th style="text-align:center">Order Qty</th>
+          <th style="text-align:center">Total Units</th>
           <th style="text-align:right">Unit Price</th>
           <th style="text-align:right">Line Total</th>
         </tr>
@@ -303,10 +325,10 @@ function buildDialogBodyHTML({ lines, totalDisplays, totalWholesale, totalRetail
       <tbody>${rows}</tbody>
     </table>
     <div class="dialog-totals">
-      <span class="dt-label">Total Displays</span>      <span class="dt-value">${totalDisplays}</span>
-      <span class="dt-label">Total Pairs</span>         <span class="dt-value">${totalDisplays * PAIRS_PER_PACK}</span>
-      <span class="dt-label">Wholesale Total</span>     <span class="dt-value">${fmt(totalWholesale)}</span>
-      <span class="dt-label">Retail Value (SRP)</span>  <span class="dt-value dt-grand">${fmt(totalRetail)}</span>
+      <span class="dt-label">Total Order Units</span>      <span class="dt-value">${totalOrderUnits}</span>
+      <span class="dt-label">Total Individual Units</span> <span class="dt-value">${totalIndividualUnits}</span>
+      <span class="dt-label">Wholesale Total</span>        <span class="dt-value">${fmt(totalWholesale)}</span>
+      <span class="dt-label">Retail Value (SRP)</span>     <span class="dt-value dt-grand">${fmt(totalRetail)}</span>
     </div>
   `;
 }
@@ -389,21 +411,22 @@ function submitToGoogleSheet(data) {
   const payload = {
     orderId,
     date,
-    lines: data.lines.map(({ p, qty, lineW, lineS }) => ({
+    lines: data.lines.map(({ p, qty, units, lineW, lineS }) => ({
       name:          p.name,
       sku:           p.sku,
       barcode:       p.barcode,
+      orderUnit:     p.orderUnit,
       qty,
-      pairs:         qty * PAIRS_PER_PACK,
+      units,
       wholesaleUnit: p.wholesale,
       lineWholesale: lineW,
       srpUnit:       p.srp,
       lineSRP:       lineS,
     })),
-    totalDisplays:  data.totalDisplays,
-    totalPairs:     data.totalDisplays * PAIRS_PER_PACK,
-    totalWholesale: data.totalWholesale,
-    totalRetail:    data.totalRetail,
+    totalOrderUnits:      data.totalOrderUnits,
+    totalIndividualUnits: data.totalIndividualUnits,
+    totalWholesale:       data.totalWholesale,
+    totalRetail:          data.totalRetail,
   };
 
   // Use GET + URL params — POST bodies are silently dropped by Google's
@@ -419,13 +442,13 @@ document.getElementById('btnCSV').addEventListener('click', () => {
   if (!confirmedOrder) return;
   const { lines } = confirmedOrder;
   const header = [
-    'Product', 'SKU', 'Barcode', 'SRP', 'Wholesale Price',
-    'Order Qty (Displays)', 'Total Pairs', 'Line Total (Wholesale)', 'Line Total (SRP)',
+    'Product', 'SKU', 'Barcode', 'Order Unit', 'Order Qty', 'Total Units',
+    'SRP', 'Wholesale Price', 'Line Total (Wholesale)', 'Line Total (SRP)',
   ];
-  const rows = lines.map(({ p, qty, lineW, lineS }) => [
+  const rows = lines.map(({ p, qty, units, lineW, lineS }) => [
     p.name, p.sku, p.barcode,
+    p.orderUnit, qty, units,
     p.srp.toFixed(2), p.wholesale.toFixed(2),
-    qty, qty * PAIRS_PER_PACK,
     lineW.toFixed(2), lineS.toFixed(2),
   ]);
 
@@ -450,15 +473,15 @@ document.getElementById('btnCSV').addEventListener('click', () => {
    ============================================================ */
 document.getElementById('btnPrint').addEventListener('click', () => {
   if (!confirmedOrder) return;
-  const { lines, totalDisplays, totalWholesale, totalRetail } = confirmedOrder;
+  const { lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail } = confirmedOrder;
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const rows = lines.map(({ p, qty, lineW }) => `
+  const rows = lines.map(({ p, qty, units, lineW }) => `
     <tr>
       <td>${p.name}</td>
       <td>${p.sku}</td>
-      <td style="text-align:center">${qty}</td>
-      <td style="text-align:center">${qty * PAIRS_PER_PACK}</td>
+      <td style="text-align:center">${qty} ${p.orderUnit}${qty !== 1 ? 's' : ''}</td>
+      <td style="text-align:center">${units} ${p.unitLabel}</td>
       <td style="text-align:right">${fmt(p.wholesale)}</td>
       <td style="text-align:right;font-weight:700">${fmt(lineW)}</td>
     </tr>
@@ -506,8 +529,8 @@ document.getElementById('btnPrint').addEventListener('click', () => {
     <thead>
       <tr>
         <th>Product</th><th>SKU</th>
-        <th style="text-align:center">Displays</th>
-        <th style="text-align:center">Pairs</th>
+        <th style="text-align:center">Order Qty</th>
+        <th style="text-align:center">Total Units</th>
         <th style="text-align:right">Unit Price</th>
         <th style="text-align:right">Line Total</th>
       </tr>
@@ -515,10 +538,10 @@ document.getElementById('btnPrint').addEventListener('click', () => {
     <tbody>${rows}</tbody>
   </table>
   <div class="totals">
-    <span class="lbl">Total Displays</span>    <span class="val">${totalDisplays}</span>
-    <span class="lbl">Total Pairs</span>        <span class="val">${totalDisplays * PAIRS_PER_PACK}</span>
-    <span class="lbl">Wholesale Total</span>    <span class="val">${fmt(totalWholesale)}</span>
-    <span class="lbl">Retail Value (SRP)</span> <span class="val grand">${fmt(totalRetail)}</span>
+    <span class="lbl">Total Order Units</span>      <span class="val">${totalOrderUnits}</span>
+    <span class="lbl">Total Individual Units</span> <span class="val">${totalIndividualUnits}</span>
+    <span class="lbl">Wholesale Total</span>        <span class="val">${fmt(totalWholesale)}</span>
+    <span class="lbl">Retail Value (SRP)</span>     <span class="val grand">${fmt(totalRetail)}</span>
   </div>
   <script>window.onload = () => { window.print(); }<\/script>
 </body>

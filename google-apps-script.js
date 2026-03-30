@@ -28,10 +28,10 @@ function doGet(e) {
     if (sheet.getLastRow() === 0) {
       sheet.appendRow([
         'Date', 'Order ID', 'Product', 'SKU', 'Barcode',
-        'Displays', 'Pairs', 'Wholesale/Unit ($)', 'Line Wholesale ($)',
+        'Order Unit', 'Order Qty', 'Total Units', 'Wholesale/Unit ($)', 'Line Wholesale ($)',
         'SRP/Unit ($)', 'Line SRP ($)',
       ]);
-      sheet.getRange(1, 1, 1, 11).setFontWeight('bold');
+      sheet.getRange(1, 1, 1, 12).setFontWeight('bold');
       sheet.setFrozenRows(1);
     }
 
@@ -43,8 +43,9 @@ function doGet(e) {
         line.name,
         line.sku,
         line.barcode,
+        line.orderUnit,
         line.qty,
-        line.pairs,
+        line.units,
         line.wholesaleUnit,
         line.lineWholesale,
         line.srpUnit,
@@ -57,16 +58,16 @@ function doGet(e) {
       data.date,
       data.orderId + ' — TOTAL',
       '— ' + data.lines.length + ' product(s) —',
-      '', '',
-      data.totalDisplays,
-      data.totalPairs,
+      '', '', '',
+      data.totalOrderUnits,
+      data.totalIndividualUnits,
       '',
       data.totalWholesale,
       '',
       data.totalRetail,
     ];
     sheet.appendRow(totalsRow);
-    sheet.getRange(sheet.getLastRow(), 1, 1, 11)
+    sheet.getRange(sheet.getLastRow(), 1, 1, 12)
          .setFontStyle('italic')
          .setBackground('#f0f4f8');
 

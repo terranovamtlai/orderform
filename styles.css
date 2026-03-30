@@ -143,7 +143,15 @@ body {
   padding: 12px 14px;
   vertical-align: middle;
 }
-.col-qty { text-align: center; min-width: 120px; }
+.col-qty { text-align: center; min-width: 130px; }
+.unit-label {
+  font-size: .7rem;
+  color: var(--muted);
+  margin-top: 4px;
+  text-align: center;
+  text-transform: lowercase;
+  letter-spacing: .02em;
+}
 
 /* Product cell */
 .product-cell { display: flex; align-items: center; gap: 10px; }
