@@ -14,92 +14,7 @@ const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyLHoKCqkTmz
    The description shown on the row is auto-generated:
      "1 {orderUnit} = {unitsPerOrder} {unitLabel}"
    ============================================================ */
-let products = [
-  {
-    id: 1,
-    name: 'Bacon Socks',
-    barcode: '644197322967',
-    sku: '687 0362',
-    srp: 15.99,
-    wholesale: 11.90,
-    img: 'images/image2.png',
-    orderUnit: 'display',
-    unitsPerOrder: 6,
-    unitLabel: 'pairs',
-  },
-  {
-    id: 2,
-    name: 'Ramen Instant Socks',
-    barcode: '644197322967',
-    sku: '687 0362',
-    srp: 15.99,
-    wholesale: 11.90,
-    img: 'images/image3.png',
-    orderUnit: 'display',
-    unitsPerOrder: 6,
-    unitLabel: 'pairs',
-  },
-  {
-    id: 3,
-    name: 'Beef Jerky Socks',
-    barcode: '644197322967',
-    sku: '687 0362',
-    srp: 15.99,
-    wholesale: 11.90,
-    img: 'images/image4.png',
-    orderUnit: 'display',
-    unitsPerOrder: 6,
-    unitLabel: 'pairs',
-  },
-  {
-    id: 4,
-    name: 'Greatest Hits Vinyl Record Socks',
-    barcode: '644197322967',
-    sku: '687 0362',
-    srp: 15.99,
-    wholesale: 11.90,
-    img: 'images/image7.png',
-    orderUnit: 'display',
-    unitsPerOrder: 6,
-    unitLabel: 'pairs',
-  },
-  {
-    id: 5,
-    name: 'Burger Socks',
-    barcode: '644197322967',
-    sku: '687 0362',
-    srp: 15.99,
-    wholesale: 11.90,
-    img: 'images/image8.png',
-    orderUnit: 'display',
-    unitsPerOrder: 6,
-    unitLabel: 'pairs',
-  },
-  {
-    id: 6,
-    name: 'Pickles Socks',
-    barcode: '644197322967',
-    sku: '687 0362',
-    srp: 15.99,
-    wholesale: 11.90,
-    img: 'images/image9.png',
-    orderUnit: 'display',
-    unitsPerOrder: 6,
-    unitLabel: 'pairs',
-  },
-  {
-    id: 7,
-    name: 'Socks With Hops',
-    barcode: '644197322967',
-    sku: '687 0362',
-    srp: 15.99,
-    wholesale: 11.90,
-    img: 'images/image11.png',
-    orderUnit: 'display',
-    unitsPerOrder: 6,
-    unitLabel: 'pairs',
-  },
-];
+let products = [];
 
 /* ============================================================
    ORDER STATE  { productId: quantity }
@@ -575,7 +490,7 @@ document.getElementById('lightboxClose').addEventListener('click', () => lightbo
 lightbox.addEventListener('click', e => { if (e.target === lightbox) lightbox.close(); });
 
 /* ============================================================
-   INIT — load products from sheet, fall back to defaults
+   INIT — load products from Google Sheets
    ============================================================ */
 async function init() {
   try {
@@ -589,11 +504,21 @@ async function init() {
         wholesale:     Number(p.wholesale),
         unitsPerOrder: Number(p.unitsPerOrder),
       }));
+    } else {
+      showCatalogueError('No products found in the sheet. Please add products via the Admin page.');
+      return;
     }
   } catch (_) {
-    // Sheet unavailable — use hardcoded defaults above
+    showCatalogueError('Could not load products. Please check your connection and try again.');
+    return;
   }
   renderProducts();
   updateSummary();
 }
+
+function showCatalogueError(msg) {
+  document.getElementById('productBody').innerHTML =
+    `<tr><td colspan="7" style="text-align:center;padding:40px;color:#718096">${msg}</td></tr>`;
+}
+
 init();
