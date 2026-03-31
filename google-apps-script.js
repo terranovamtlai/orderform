@@ -171,8 +171,10 @@ function td(text, align) {
   return '<td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:' + (align||'left') + '">' + text + '</td>';
 }
 function row2(label, value, color) {
-  return '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
-    + '<span style="color:#718096">' + label + '</span>'
-    + '<strong style="color:' + (color||'#1a202c') + '">' + value + '</strong>'
-    + '</div>';
+  return '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:6px">'
+    + '<tr>'
+    + '<td style="color:#718096">' + label + '</td>'
+    + '<td align="right"><strong style="color:' + (color||'#1a202c') + '">' + value + '</strong></td>'
+    + '</tr>'
+    + '</table>';
 }
