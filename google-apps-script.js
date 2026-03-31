@@ -42,9 +42,11 @@ function getNextOrderId() {
 function doGet(e) {
   const action = (e.parameter && e.parameter.action) || 'submitOrder';
   try {
-    if      (action === 'getProducts')  return handleGetProducts();
-    else if (action === 'saveProducts') return handleSaveProducts(e);
-    else                                return handleSubmitOrder(e);
+    if      (action === 'getProducts')      return handleGetProducts();
+    else if (action === 'saveProducts')     return handleSaveProducts(e);
+    else if (action === 'getOrders')        return handleGetOrders();
+    else if (action === 'updateOrderStatus') return handleUpdateOrderStatus(e);
+    else                                    return handleSubmitOrder(e);
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
   }
@@ -185,6 +187,85 @@ function sendOrderEmail(data) {
     + '</div></div>';
 
   MailApp.sendEmail({ to: ORDER_EMAIL, subject: 'New Terra Nova Order — ' + data.orderId, htmlBody: html });
+}
+
+/* ── Orders: read (admin) ────────────────────────────────── */
+function handleGetOrders() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(ORDERS_SHEET);
+  if (!sheet || sheet.getLastRow() < 2) return json([]);
+
+  const rows   = sheet.getDataRange().getValues();
+  // Columns: 0=Date 1=OrderID 2=Product 3=SKU 4=Barcode 5=OrderUnit
+  //          6=OrderQty 7=TotalUnits 8=WholesaleUnit 9=LineWholesale 10=SRPUnit 11=LineSRP
+  //          12=OrderSent 13=InvoiceSent 14=PaymentReceived 15=Cancelled
+
+  const orders  = [];
+  let   current = null;
+
+  for (var i = 1; i < rows.length; i++) {
+    var row     = rows[i];
+    var orderId = String(row[1]);
+
+    if (orderId.indexOf(' — TOTAL') !== -1) {
+      // Summary row — close current order
+      if (current) {
+        current.totalOrderUnits      = row[6];
+        current.totalIndividualUnits = row[7];
+        current.totalWholesale       = row[9];
+        current.totalRetail          = row[11];
+        current.orderSent            = row[12] === true;
+        current.invoiceSent          = row[13] === true;
+        current.paymentReceived      = row[14] === true;
+        current.cancelled            = row[15] === true;
+        orders.push(current);
+        current = null;
+      }
+    } else if (row[0] !== '' && orderId !== '') {
+      // Line row — start or extend current order
+      if (!current || current.orderId !== orderId) {
+        current = { orderId: orderId, date: row[0], lines: [] };
+      }
+      current.lines.push({
+        name:         row[2],
+        sku:          row[3],
+        orderUnit:    row[5],
+        qty:          row[6],
+        units:        row[7],
+        lineWholesale: row[9],
+        lineSRP:      row[11],
+      });
+    }
+  }
+
+  orders.reverse(); // most recent first
+  return json(orders);
+}
+
+/* ── Orders: update status checkbox ─────────────────────── */
+function handleUpdateOrderStatus(e) {
+  var payload = JSON.parse(e.parameter.payload);
+  var orderId = payload.orderId;
+  var field   = payload.field;
+  var value   = payload.value;
+
+  // Map field name to column number (1-based)
+  var colMap = { orderSent: 13, invoiceSent: 14, paymentReceived: 15, cancelled: 16 };
+  var col    = colMap[field];
+  if (!col) return json({ status: 'error', message: 'Unknown field: ' + field });
+
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(ORDERS_SHEET);
+  if (!sheet) return json({ status: 'error', message: 'Orders sheet not found' });
+
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][1]) === orderId + ' — TOTAL') {
+      sheet.getRange(i + 1, col).setValue(value === true);
+      return json({ status: 'ok' });
+    }
+  }
+  return json({ status: 'error', message: 'Order not found: ' + orderId });
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */

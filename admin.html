@@ -8,7 +8,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --navy: #1e3a5f; --navy-lt: #2c5282; --orange: #f26522;
-      --green: #2d9c5e; --red: #e53e3e;
+      --green: #2d9c5e; --red: #e53e3e; --amber: #d97706;
       --bg: #f0f4f8; --surface: #fff; --border: #e2e8f0;
       --text: #1a202c; --muted: #718096;
     }
@@ -58,6 +58,22 @@
     }
     .btn-logout:hover { background: rgba(255,255,255,.22); }
 
+    /* ── Tabs ── */
+    .tab-bar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 28px; display: flex; gap: 0;
+    }
+    .tab-btn {
+      padding: 13px 22px; font-size: .88rem; font-weight: 600;
+      color: var(--muted); background: none; border: none;
+      border-bottom: 3px solid transparent; cursor: pointer;
+      transition: color .12s, border-color .12s; margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--navy); }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
     /* ── Admin body ── */
     #adminContent { display: none; }
     .admin-body { max-width: 1200px; margin: 28px auto; padding: 0 24px 60px; }
@@ -68,18 +84,18 @@
       margin-bottom: 18px; flex-wrap: wrap; gap: 12px;
     }
     .toolbar h2 { font-size: 1.05rem; font-weight: 600; color: var(--navy); }
-    .toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .btn { border-radius: 6px; padding: 9px 18px; font-size: .875rem;
            font-weight: 600; cursor: pointer; border: none; transition: background .12s; }
-    .btn-primary { background: var(--navy); color: #fff; }
-    .btn-primary:hover { background: var(--navy-lt); }
-    .btn-success { background: var(--green); color: #fff; }
-    .btn-success:hover { background: #237a4a; }
+    .btn-primary   { background: var(--navy);    color: #fff; }
+    .btn-primary:hover   { background: var(--navy-lt); }
+    .btn-success   { background: var(--green);   color: #fff; }
+    .btn-success:hover   { background: #237a4a; }
     .btn-secondary { background: var(--surface); color: var(--text);
                      border: 1px solid var(--border); }
     .btn-secondary:hover { background: var(--bg); }
-    .btn-danger { background: var(--red); color: #fff; }
-    .btn-danger:hover { background: #c53030; }
+    .btn-danger    { background: var(--red);     color: #fff; }
+    .btn-danger:hover    { background: #c53030; }
 
     /* ── Toast ── */
     .toast {
@@ -105,11 +121,13 @@
       font-size: .71rem; text-transform: uppercase; letter-spacing: .06em;
       white-space: nowrap;
     }
-    thead th:first-child { border-radius: 8px 0 0 0; width: 70px; }
+    thead th:first-child { border-radius: 8px 0 0 0; }
     tbody tr { border-bottom: 1px solid var(--border); }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #f7f9fc; }
     td { padding: 10px 12px; vertical-align: middle; }
+
+    /* product table specifics */
+    #productBody tr:hover { background: #f7f9fc; }
     td input, td select {
       width: 100%; padding: 6px 8px; border: 1px solid var(--border);
       border-radius: 4px; font-size: .83rem; color: var(--text);
@@ -135,6 +153,49 @@
     .status-bar.loading { background: #ebf4ff; color: #2b6cb0; display: block; }
     .status-bar.success { background: #e8f8ef; color: var(--green); display: block; }
     .status-bar.error   { background: #fff5f5; color: var(--red);   display: block; }
+
+    /* ── Orders table ── */
+    #ordersTable thead th { text-align: center; }
+    #ordersTable thead th:first-child,
+    #ordersTable thead th:nth-child(2) { text-align: left; }
+    #ordersTable td { text-align: center; }
+    #ordersTable td:first-child,
+    #ordersTable td:nth-child(2) { text-align: left; }
+
+    .order-id { font-family: monospace; font-size: .8rem; color: var(--navy); font-weight: 600; }
+    .order-date { font-size: .8rem; color: var(--muted); }
+    .order-total { font-weight: 700; }
+
+    /* checkbox column */
+    .cb-wrap { display: flex; justify-content: center; }
+    .status-cb { width: 18px; height: 18px; cursor: pointer; accent-color: var(--green); }
+
+    /* cancel / cancelled */
+    .btn-cancel-order {
+      background: none; border: 1px solid var(--red); color: var(--red);
+      border-radius: 4px; padding: 4px 10px; font-size: .78rem;
+      font-weight: 600; cursor: pointer; white-space: nowrap;
+      transition: background .12s, color .12s;
+    }
+    .btn-cancel-order:hover { background: var(--red); color: #fff; }
+    tr.cancelled-row { opacity: .45; }
+    tr.cancelled-row .order-id::after { content: ' — CANCELLED'; color: var(--red); }
+
+    /* expand row */
+    .expand-btn {
+      background: none; border: none; color: var(--navy-lt);
+      font-size: .8rem; cursor: pointer; padding: 0; font-weight: 600;
+    }
+    .detail-row td { background: #f7faff; padding: 0; }
+    .detail-inner {
+      padding: 12px 16px;
+      font-size: .82rem;
+    }
+    .detail-inner table { font-size: .82rem; }
+    .detail-inner thead th { background: #e2e8f0; color: var(--text); font-size: .7rem; }
+    .detail-inner tbody tr:hover { background: transparent; }
+    .show-cancelled-wrap { font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .show-cancelled-wrap input { width: auto; }
   </style>
 </head>
 <body>
@@ -159,57 +220,97 @@
       <div class="admin-header-left">
         <img src="images/image1.png" alt="Terra Nova" />
         <div>
-          <h1>Product Inventory</h1>
-          <div class="admin-header-sub">Changes saved here update the live order form</div>
+          <h1>Terra Nova Admin</h1>
+          <div class="admin-header-sub">Manage products and orders</div>
         </div>
       </div>
       <button class="btn-logout" onclick="logout()">Sign Out</button>
     </header>
 
-    <div class="admin-body">
+    <nav class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('products')">Products</button>
+      <button class="tab-btn"        onclick="switchTab('orders')">Orders</button>
+    </nav>
 
-      <div class="toolbar">
-        <h2>Products</h2>
-        <div class="toolbar-actions">
-          <button class="btn btn-secondary" onclick="loadProducts()">&#8635; Refresh from Sheet</button>
-          <button class="btn btn-primary"   onclick="addRow()">+ Add Product</button>
-          <button class="btn btn-success"   onclick="saveProducts()">&#10003; Save to Sheet</button>
+    <!-- ── Products tab ── -->
+    <div class="tab-panel active" id="tab-products">
+      <div class="admin-body">
+        <div class="toolbar">
+          <h2>Products</h2>
+          <div class="toolbar-actions">
+            <button class="btn btn-secondary" onclick="loadProducts()">&#8635; Refresh from Sheet</button>
+            <button class="btn btn-primary"   onclick="addRow()">+ Add Product</button>
+            <button class="btn btn-success"   onclick="saveProducts()">&#10003; Save to Sheet</button>
+          </div>
+        </div>
+        <div class="status-bar" id="statusBar"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Name</th>
+                <th>Barcode</th>
+                <th>SKU</th>
+                <th>SRP / unit</th>
+                <th>Wholesale / unit</th>
+                <th>Order Unit</th>
+                <th>Units / Order</th>
+                <th>Unit Label</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="productBody"></tbody>
+          </table>
         </div>
       </div>
-
-      <div class="status-bar" id="statusBar"></div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Image</th>
-              <th>Name</th>
-              <th>Barcode</th>
-              <th>SKU</th>
-              <th>SRP / unit</th>
-              <th>Wholesale / unit</th>
-              <th>Order Unit</th>
-              <th>Units / Order</th>
-              <th>Unit Label</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="productBody"></tbody>
-        </table>
-      </div>
-
     </div>
+
+    <!-- ── Orders tab ── -->
+    <div class="tab-panel" id="tab-orders">
+      <div class="admin-body">
+        <div class="toolbar">
+          <h2>Orders</h2>
+          <div class="toolbar-actions">
+            <label class="show-cancelled-wrap">
+              <input type="checkbox" id="showCancelled" onchange="renderOrders()" />
+              Show cancelled
+            </label>
+            <button class="btn btn-secondary" onclick="loadOrders()">&#8635; Refresh</button>
+          </div>
+        </div>
+        <div class="status-bar" id="ordersStatusBar"></div>
+        <div class="table-wrap">
+          <table id="ordersTable">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>Items</th>
+                <th>Order Units</th>
+                <th>Total Units</th>
+                <th>Wholesale Total</th>
+                <th>Order Sent</th>
+                <th>Invoice Sent</th>
+                <th>Payment Received</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    const WEBHOOK = 'https://script.google.com/macros/s/AKfycbyLHoKCqkTmzZgpHmwrRhB6fggm8Ua6py7_H5nY6qpyD9AzcMxTqdpD_Pb4iWb4TD1t/exec';
-    const PASSWORD = 'pickleball2026';
+    const WEBHOOK     = 'https://script.google.com/macros/s/AKfycbyLHoKCqkTmzZgpHmwrRhB6fggm8Ua6py7_H5nY6qpyD9AzcMxTqdpD_Pb4iWb4TD1t/exec';
+    const PASSWORD    = 'pickleball2026';
     const SESSION_KEY = 'tn_admin_auth';
 
-    // Default products (used as seed data if sheet is empty)
     const DEFAULTS = [
       { id:1, name:'Bacon Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image2.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
       { id:2, name:'Ramen Instant Socks',             barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image3.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
@@ -220,11 +321,13 @@
       { id:7, name:'Socks With Hops',                 barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image11.png', orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
     ];
 
-    /* ── Auth ── */
+    /* ════════════════════════════════════════════════════════
+       AUTH
+    ════════════════════════════════════════════════════════ */
     function login() {
       if (document.getElementById('pwInput').value === PASSWORD) {
         sessionStorage.setItem(SESSION_KEY, '1');
-        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display  = 'none';
         document.getElementById('adminContent').style.display = 'block';
         loadProducts();
       } else {
@@ -236,19 +339,31 @@
 
     function logout() {
       sessionStorage.removeItem(SESSION_KEY);
-      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('loginScreen').style.display  = 'flex';
       document.getElementById('adminContent').style.display = 'none';
       document.getElementById('pwInput').value = '';
     }
 
-    // Auto-login if session exists
     if (sessionStorage.getItem(SESSION_KEY)) {
-      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display  = 'none';
       document.getElementById('adminContent').style.display = 'block';
       loadProducts();
     }
 
-    /* ── Load products from sheet ── */
+    /* ════════════════════════════════════════════════════════
+       TAB NAVIGATION
+    ════════════════════════════════════════════════════════ */
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector(`.tab-btn[onclick*="${name}"]`).classList.add('active');
+      document.getElementById('tab-' + name).classList.add('active');
+      if (name === 'orders') loadOrders();
+    }
+
+    /* ════════════════════════════════════════════════════════
+       PRODUCTS
+    ════════════════════════════════════════════════════════ */
     async function loadProducts() {
       setStatus('loading', 'Loading products from sheet…');
       try {
@@ -270,7 +385,6 @@
       }
     }
 
-    /* ── Render editable table ── */
     function renderTable(products) {
       const tbody = document.getElementById('productBody');
       tbody.innerHTML = '';
@@ -307,18 +421,15 @@
       return tr;
     }
 
-    /* ── Add blank row ── */
     let nextId = 100;
     function addRow() {
       const tbody = document.getElementById('productBody');
-      const idx   = tbody.rows.length;
       const blank = { id: nextId++, name:'', barcode:'644197322967', sku:'687 0362',
                       srp:15.99, wholesale:11.90, img:'images/image1.png',
                       orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' };
-      tbody.appendChild(makeRow(blank, idx));
+      tbody.appendChild(makeRow(blank, tbody.rows.length));
     }
 
-    /* ── Collect table data ── */
     function collectRows() {
       return Array.from(document.querySelectorAll('#productBody tr')).map((tr, i) => ({
         id:            i + 1,
@@ -334,14 +445,12 @@
       })).filter(p => p.name);
     }
 
-    /* ── Save products to sheet ── */
     async function saveProducts() {
       const products = collectRows();
       if (!products.length) { toast('No products to save.', 'error'); return; }
-
       setStatus('loading', 'Saving to sheet…');
       try {
-        const url = `${WEBHOOK}?action=saveProducts&payload=${encodeURIComponent(JSON.stringify(products))}`;
+        const url  = `${WEBHOOK}?action=saveProducts&payload=${encodeURIComponent(JSON.stringify(products))}`;
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status === 'ok') {
@@ -356,10 +465,146 @@
       }
     }
 
-    /* ── UI helpers ── */
+    /* ════════════════════════════════════════════════════════
+       ORDERS
+    ════════════════════════════════════════════════════════ */
+    let allOrders = [];
+
+    async function loadOrders() {
+      setOrdersStatus('loading', 'Loading orders…');
+      try {
+        const res  = await fetch(`${WEBHOOK}?action=getOrders`);
+        const data = await res.json();
+        allOrders  = Array.isArray(data) ? data : [];
+        renderOrders();
+        setOrdersStatus('success', `${allOrders.length} order${allOrders.length !== 1 ? 's' : ''} found.`);
+      } catch (err) {
+        setOrdersStatus('error', 'Could not load orders: ' + err.message);
+      }
+    }
+
+    function renderOrders() {
+      const showCancelled = document.getElementById('showCancelled').checked;
+      const tbody = document.getElementById('ordersBody');
+      tbody.innerHTML = '';
+
+      const visible = showCancelled ? allOrders : allOrders.filter(o => !o.cancelled);
+
+      if (!visible.length) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:28px">
+          ${allOrders.length ? 'All orders are cancelled. Check "Show cancelled" to view them.' : 'No orders yet.'}
+        </td></tr>`;
+        return;
+      }
+
+      visible.forEach(order => {
+        // Summary row
+        const tr = document.createElement('tr');
+        if (order.cancelled) tr.classList.add('cancelled-row');
+        tr.innerHTML = `
+          <td>
+            <button class="expand-btn" onclick="toggleDetail('${order.orderId}')">&#9654;</button>
+            <span class="order-id">${order.orderId}</span>
+          </td>
+          <td class="order-date">${order.date}</td>
+          <td style="text-align:center">${order.lines.length}</td>
+          <td style="text-align:center">${order.totalOrderUnits}</td>
+          <td style="text-align:center">${order.totalIndividualUnits}</td>
+          <td style="text-align:right" class="order-total">$${Number(order.totalWholesale).toFixed(2)}</td>
+          <td><div class="cb-wrap"><input type="checkbox" class="status-cb" ${order.orderSent       ? 'checked' : ''}
+              onchange="updateStatus('${order.orderId}','orderSent',this.checked)"       /></div></td>
+          <td><div class="cb-wrap"><input type="checkbox" class="status-cb" ${order.invoiceSent     ? 'checked' : ''}
+              onchange="updateStatus('${order.orderId}','invoiceSent',this.checked)"     /></div></td>
+          <td><div class="cb-wrap"><input type="checkbox" class="status-cb" ${order.paymentReceived ? 'checked' : ''}
+              onchange="updateStatus('${order.orderId}','paymentReceived',this.checked)" /></div></td>
+          <td style="text-align:center">
+            ${order.cancelled
+              ? '<span style="font-size:.75rem;color:var(--red);font-weight:600">Cancelled</span>'
+              : `<button class="btn-cancel-order" onclick="cancelOrder('${order.orderId}')">Cancel</button>`
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        // Detail row (hidden by default)
+        const detailTr = document.createElement('tr');
+        detailTr.classList.add('detail-row');
+        detailTr.id = 'detail-' + order.orderId;
+        detailTr.style.display = 'none';
+        detailTr.innerHTML = `<td colspan="10">
+          <div class="detail-inner">
+            <table>
+              <thead><tr>
+                <th style="text-align:left">Product</th>
+                <th style="text-align:left">SKU</th>
+                <th>Order Qty</th>
+                <th>Total Units</th>
+                <th style="text-align:right">Line Wholesale</th>
+                <th style="text-align:right">Line SRP</th>
+              </tr></thead>
+              <tbody>
+                ${order.lines.map(l => `<tr>
+                  <td style="text-align:left">${l.name}</td>
+                  <td style="text-align:left;font-size:.78rem;color:var(--muted)">${l.sku}</td>
+                  <td style="text-align:center">${l.qty} ${l.orderUnit}${l.qty !== 1 ? 's' : ''}</td>
+                  <td style="text-align:center">${l.units}</td>
+                  <td style="text-align:right">$${Number(l.lineWholesale).toFixed(2)}</td>
+                  <td style="text-align:right">$${Number(l.lineSRP).toFixed(2)}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </td>`;
+        tbody.appendChild(detailTr);
+      });
+    }
+
+    function toggleDetail(orderId) {
+      const row = document.getElementById('detail-' + orderId);
+      const btn = row.previousElementSibling.querySelector('.expand-btn');
+      const open = row.style.display !== 'none';
+      row.style.display = open ? 'none' : 'table-row';
+      btn.textContent   = open ? '▶' : '▼';
+    }
+
+    async function updateStatus(orderId, field, value) {
+      try {
+        const payload = JSON.stringify({ orderId, field, value });
+        const url     = `${WEBHOOK}?action=updateOrderStatus&payload=${encodeURIComponent(payload)}`;
+        const res     = await fetch(url);
+        const data    = await res.json();
+        if (data.status !== 'ok') throw new Error(data.message);
+        // Update local state
+        const order = allOrders.find(o => o.orderId === orderId);
+        if (order) order[field] = value;
+        toast('Saved', 'success');
+      } catch (err) {
+        toast('Save failed: ' + err.message, 'error');
+        loadOrders(); // revert display
+      }
+    }
+
+    async function cancelOrder(orderId) {
+      if (!confirm(`Cancel order ${orderId}?\n\nThis will flag it in the spreadsheet. It will no longer appear in the default orders view.`)) return;
+      await updateStatus(orderId, 'cancelled', true);
+      const order = allOrders.find(o => o.orderId === orderId);
+      if (order) order.cancelled = true;
+      renderOrders();
+      toast('Order cancelled.', 'success');
+    }
+
+    /* ════════════════════════════════════════════════════════
+       UI HELPERS
+    ════════════════════════════════════════════════════════ */
     function setStatus(type, msg) {
       const el = document.getElementById('statusBar');
-      el.className = 'status-bar ' + type;
+      el.className   = 'status-bar ' + type;
+      el.textContent = msg;
+    }
+
+    function setOrdersStatus(type, msg) {
+      const el = document.getElementById('ordersStatusBar');
+      el.className   = 'status-bar ' + type;
       el.textContent = msg;
     }
 
@@ -367,7 +612,7 @@
     function toast(msg, type) {
       const el = document.getElementById('toast');
       el.textContent = msg;
-      el.className = 'toast show' + (type ? ' ' + type : '');
+      el.className   = 'toast show' + (type ? ' ' + type : '');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => { el.className = 'toast'; }, 3000);
     }
