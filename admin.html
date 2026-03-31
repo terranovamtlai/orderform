@@ -162,8 +162,8 @@
     #ordersTable td:first-child,
     #ordersTable td:nth-child(2) { text-align: left; }
 
-    .order-id { font-family: monospace; font-size: .8rem; color: var(--navy); font-weight: 600; }
-    .order-date { font-size: .8rem; color: var(--muted); }
+    .order-id { font-family: monospace; font-size: .8rem; color: var(--navy); font-weight: 600; white-space: nowrap; }
+    .order-date { font-size: .8rem; color: var(--muted); white-space: nowrap; }
     .order-total { font-weight: 700; }
 
     /* checkbox column */
@@ -320,6 +320,16 @@
       { id:6, name:'Pickles Socks',                   barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image9.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
       { id:7, name:'Socks With Hops',                 barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image11.png', orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
     ];
+
+    /* ── Date formatter ── */
+    function fmtDate(d) {
+      if (!d) return '';
+      var s = String(d);
+      // ISO:       2026-03-31T03:29:00.000Z  → 2026-03-31 03:29
+      // Formatted: 2026-03-31 03:29          → already good
+      var m = s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
+      return m ? m[1] + ' ' + m[2] : s;
+    }
 
     /* ════════════════════════════════════════════════════════
        AUTH
@@ -506,7 +516,7 @@
             <button class="expand-btn" onclick="toggleDetail('${order.orderId}')">&#9654;</button>
             <span class="order-id">${order.orderId}</span>
           </td>
-          <td class="order-date">${order.date}</td>
+          <td class="order-date">${fmtDate(order.date)}</td>
           <td style="text-align:center">${order.lines.length}</td>
           <td style="text-align:center">${order.totalOrderUnits}</td>
           <td style="text-align:center">${order.totalIndividualUnits}</td>

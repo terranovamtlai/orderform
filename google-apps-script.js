@@ -224,7 +224,7 @@ function handleGetOrders() {
     } else if (row[0] !== '' && orderId !== '') {
       // Line row — start or extend current order
       if (!current || current.orderId !== orderId) {
-        current = { orderId: orderId, date: row[0], lines: [] };
+        current = { orderId: orderId, date: Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'), lines: [] };
       }
       current.lines.push({
         name:         row[2],
