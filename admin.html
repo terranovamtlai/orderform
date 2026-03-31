@@ -185,7 +185,9 @@
     .expand-btn {
       background: none; border: none; color: var(--navy-lt);
       font-size: .8rem; cursor: pointer; padding: 0; font-weight: 600;
+      vertical-align: middle; line-height: 1; flex-shrink: 0;
     }
+    .order-id-cell { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
     .detail-row td { background: #f7faff; padding: 0; }
     .detail-inner {
       padding: 12px 16px;
@@ -513,8 +515,10 @@
         if (order.cancelled) tr.classList.add('cancelled-row');
         tr.innerHTML = `
           <td>
-            <button class="expand-btn" onclick="toggleDetail('${order.orderId}')">&#9654;</button>
-            <span class="order-id">${order.orderId}</span>
+            <div class="order-id-cell">
+              <button class="expand-btn" onclick="toggleDetail('${order.orderId}')">&#9654;</button>
+              <span class="order-id">${order.orderId}</span>
+            </div>
           </td>
           <td class="order-date">${fmtDate(order.date)}</td>
           <td style="text-align:center">${order.lines.length}</td>
