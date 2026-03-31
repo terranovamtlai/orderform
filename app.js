@@ -35,15 +35,30 @@ function profitPct(p) {
 /* ============================================================
    RENDER PRODUCT TABLE
    ============================================================ */
+function maxOrderQty(p) {
+  // remaining is in individual units; convert to order units
+  if (p.available === false || p.available === 'false' || p.available === 'FALSE') return 0;
+  if (p.remaining === null || p.remaining === undefined) return 9999;
+  return Math.floor(Number(p.remaining) / p.unitsPerOrder);
+}
+
 function renderProducts() {
-  const rows = products.map(p => `
-    <tr data-id="${p.id}">
+  const rows = products.map(p => {
+    const avail  = !(p.available === false || p.available === 'false' || p.available === 'FALSE');
+    const maxQty = maxOrderQty(p);
+    const stockInfo = avail && p.remaining !== null && p.remaining !== undefined
+      ? `<div class="stock-info ${p.remaining === 0 ? 'stock-out' : p.remaining <= p.unitsPerOrder * 2 ? 'stock-low' : ''}">${p.remaining} ${p.unitLabel} remaining</div>`
+      : '';
+
+    return `
+    <tr data-id="${p.id}" class="${!avail ? 'product-unavailable' : ''}">
       <td>
         <div class="product-cell">
           <img class="product-img" src="${p.img}" alt="${p.name}" loading="lazy" />
           <div>
-            <div class="product-name">${p.name}</div>
+            <div class="product-name">${p.name}${!avail ? ' <span class="unavail-badge">Unavailable</span>' : ''}</div>
             <div class="product-desc">1 ${p.orderUnit} = ${p.unitsPerOrder} ${p.unitLabel}</div>
+            ${stockInfo}
           </div>
         </div>
       </td>
@@ -53,18 +68,21 @@ function renderProducts() {
       <td><span class="profit-badge">${profitPct(p)}%</span></td>
       <td><span class="wholesale-text">${fmt(p.wholesale)}</span></td>
       <td class="col-qty">
+        ${avail && maxQty > 0 ? `
         <div class="qty-stepper">
           <button class="qty-btn btn-dec" data-id="${p.id}" aria-label="Decrease quantity">&#8722;</button>
-          <input  class="qty-input" type="number" min="0" step="1"
+          <input  class="qty-input" type="number" min="0" step="1" max="${maxQty}"
                   value="${order[p.id] || 0}"
                   data-id="${p.id}"
                   aria-label="Order quantity for ${p.name}" />
           <button class="qty-btn btn-inc" data-id="${p.id}" aria-label="Increase quantity">+</button>
         </div>
-        <div class="unit-label">${p.orderUnit}s</div>
+        <div class="unit-label">${p.orderUnit}s</div>` : `
+        <div class="qty-blocked">${!avail ? 'Unavailable' : 'Out of Stock'}</div>`}
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   document.getElementById('productBody').insertAdjacentHTML('afterbegin', rows);
 }
@@ -125,7 +143,9 @@ function updateSummary() {
    SET QUANTITY  — single source of truth for order mutations
    ============================================================ */
 function setQty(id, raw) {
-  const qty = Math.max(0, Math.floor(parseFloat(raw) || 0));
+  const p   = products.find(x => x.id === id);
+  const cap = p ? maxOrderQty(p) : 9999;
+  const qty = Math.min(cap, Math.max(0, Math.floor(parseFloat(raw) || 0)));
 
   if (qty === 0) {
     delete order[id];
@@ -503,6 +523,8 @@ async function init() {
         srp:           Number(p.srp),
         wholesale:     Number(p.wholesale),
         unitsPerOrder: Number(p.unitsPerOrder),
+        available:     p.available !== false && p.available !== 'false' && p.available !== 'FALSE',
+        remaining:     p.remaining === null || p.remaining === undefined ? null : Number(p.remaining),
       }));
     } else {
       showCatalogueError('No products found in the sheet. Please add products via the Admin page.');

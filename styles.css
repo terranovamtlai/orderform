@@ -139,6 +139,27 @@ body {
 .product-table tbody tr.in-order { background: var(--green-lt); }
 .product-table tbody tr.in-order:hover { background: #d0edde; }
 
+/* Unavailable products */
+.product-table tbody tr.product-unavailable { opacity: .5; pointer-events: none; }
+.product-table tbody tr.product-unavailable:hover { background: none; }
+.unavail-badge {
+  display: inline-block; font-size: .65rem; font-weight: 700;
+  background: #fed7d7; color: #c53030; border-radius: 3px;
+  padding: 1px 5px; vertical-align: middle; letter-spacing: .03em;
+  text-transform: uppercase; margin-left: 6px;
+}
+.qty-blocked {
+  font-size: .75rem; font-weight: 600; color: #a0aec0;
+  padding: 6px 0; text-transform: uppercase; letter-spacing: .04em;
+}
+
+/* Stock info */
+.stock-info {
+  font-size: .7rem; color: var(--green); margin-top: 2px; font-weight: 600;
+}
+.stock-info.stock-low { color: #d97706; }
+.stock-info.stock-out { color: #e53e3e; }
+
 .product-table td {
   padding: 12px 14px;
   vertical-align: middle;

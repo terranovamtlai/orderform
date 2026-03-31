@@ -71,6 +71,36 @@ function handleGetProducts() {
       return obj;
     });
 
+  // Compute units already ordered per product (excluding cancelled orders)
+  const ordersSheet = ss.getSheetByName(ORDERS_SHEET);
+  const orderedMap  = {};
+  if (ordersSheet && ordersSheet.getLastRow() > 1) {
+    const oRows = ordersSheet.getDataRange().getValues();
+    // First pass: collect cancelled order IDs (TOTAL rows with col 16 = true)
+    var cancelled = {};
+    oRows.slice(1).forEach(function(r) {
+      var oid = String(r[1]);
+      if (oid.indexOf(' — TOTAL') !== -1 && r[15] === true) {
+        cancelled[oid.replace(' — TOTAL', '')] = true;
+      }
+    });
+    // Second pass: sum Total Units (col 8, index 7) per product name for non-cancelled
+    oRows.slice(1).forEach(function(r) {
+      var oid = String(r[1]);
+      if (oid.indexOf(' — TOTAL') === -1 && !cancelled[oid] && r[2] !== '') {
+        orderedMap[r[2]] = (orderedMap[r[2]] || 0) + Number(r[7]);
+      }
+    });
+  }
+
+  // Attach remaining stock to each product
+  // remaining = null means no inventory limit set (totalInventory = 0)
+  products.forEach(function(p) {
+    var total = Number(p.totalInventory) || 0;
+    p.ordered   = orderedMap[p.name] || 0;
+    p.remaining = total > 0 ? Math.max(0, total - p.ordered) : null;
+  });
+
   return json(products);
 }
 
