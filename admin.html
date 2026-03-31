@@ -171,6 +171,11 @@
     .status-bar.success { background: #e8f8ef; color: var(--green); display: block; }
     .status-bar.error   { background: #fff5f5; color: var(--red);   display: block; }
 
+    /* ── Inventory table ── */
+    #invTable thead th { text-align: center; }
+    #invTable thead th:first-child { text-align: left; }
+    #invTable td:first-child { text-align: left; }
+
     /* ── Orders table ── */
     #ordersTable thead th { text-align: center; }
     #ordersTable thead th:first-child,
@@ -248,6 +253,7 @@
 
     <nav class="tab-bar">
       <button class="tab-btn active" onclick="switchTab('products')">Products</button>
+      <button class="tab-btn"        onclick="switchTab('inventory')">Inventory Tracker</button>
       <button class="tab-btn"        onclick="switchTab('orders')">Orders</button>
     </nav>
 
@@ -276,14 +282,38 @@
                 <th>Order Unit</th>
                 <th>Units / Order</th>
                 <th>Unit Label</th>
-                <th>Status</th>
-                <th>Total Inventory</th>
-                <th>Ordered</th>
-                <th>Remaining</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="productBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Inventory Tracker tab ── -->
+    <div class="tab-panel" id="tab-inventory">
+      <div class="admin-body">
+        <div class="toolbar">
+          <h2>Inventory Tracker</h2>
+          <div class="toolbar-actions">
+            <button class="btn btn-secondary" onclick="loadInventory()">&#8635; Refresh</button>
+            <button class="btn btn-success"   onclick="saveInventory()">&#10003; Save to Sheet</button>
+          </div>
+        </div>
+        <div class="status-bar" id="invStatusBar"></div>
+        <div class="table-wrap">
+          <table id="invTable">
+            <thead>
+              <tr>
+                <th style="text-align:left">Product</th>
+                <th>Status</th>
+                <th>Total Inventory</th>
+                <th>Ordered</th>
+                <th>Remaining</th>
+              </tr>
+            </thead>
+            <tbody id="invBody"></tbody>
           </table>
         </div>
       </div>
@@ -391,38 +421,18 @@
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       document.querySelector(`.tab-btn[onclick*="${name}"]`).classList.add('active');
       document.getElementById('tab-' + name).classList.add('active');
-      if (name === 'orders') loadOrders();
+      if (name === 'orders')    loadOrders();
+      if (name === 'inventory') loadInventory();
     }
 
     /* ════════════════════════════════════════════════════════
        PRODUCTS
     ════════════════════════════════════════════════════════ */
-    // Units ordered per product name (from non-cancelled orders)
-    let orderedStats = {};
-
-    async function loadOrderStats() {
-      try {
-        const res    = await fetch(`${WEBHOOK}?action=getOrders`);
-        const orders = await res.json();
-        const stats  = {};
-        (Array.isArray(orders) ? orders : [])
-          .filter(o => !o.cancelled)
-          .forEach(o => o.lines.forEach(l => {
-            stats[l.name] = (stats[l.name] || 0) + Number(l.units);
-          }));
-        return stats;
-      } catch (_) { return {}; }
-    }
-
     async function loadProducts() {
       setStatus('loading', 'Loading products from sheet…');
       try {
-        const [prodRes, stats] = await Promise.all([
-          fetch(`${WEBHOOK}?action=getProducts`),
-          loadOrderStats(),
-        ]);
-        orderedStats = stats;
-        const data     = await prodRes.json();
+        const res  = await fetch(`${WEBHOOK}?action=getProducts`);
+        const data = await res.json();
         const products = (Array.isArray(data) && data.length > 0) ? data : DEFAULTS;
         renderTable(products.map(p => ({
           ...p,
@@ -448,15 +458,9 @@
     }
 
     function makeRow(p, idx) {
-      const avail    = p.available !== false;
-      const ordered  = orderedStats[p.name] || 0;
-      const total    = Number(p.totalInventory) || 0;
-      const remaining = total - ordered;
-      const remClass  = total === 0 ? '' : remaining <= 0 ? 'out' : remaining <= total * 0.2 ? 'low' : 'ok';
-
       const tr = document.createElement('tr');
-      tr.dataset.idx = idx;
-      if (!avail) tr.classList.add('unavailable-row');
+      tr.dataset.idx  = idx;
+      tr.dataset.name = p.name;
       tr.innerHTML = `
         <td class="col-img">
           <img src="${p.img}" alt="" onerror="this.src='images/image1.png'" />
@@ -477,38 +481,14 @@
         </td>
         <td><input type="number" class="f-unitsPerOrder" value="${p.unitsPerOrder}" min="1" step="1" /></td>
         <td><input type="text"   class="f-unitLabel"     value="${p.unitLabel}"     /></td>
-        <td>
-          <button class="btn-avail f-available ${avail ? 'available' : 'unavailable'}"
-                  onclick="toggleAvail(this)">${avail ? 'Available' : 'Unavailable'}</button>
-        </td>
-        <td><input type="number" class="f-totalInventory" value="${total}" min="0" step="1"
-                   oninput="updateRemainingCell(this)" /></td>
-        <td class="inv-stat">${ordered || '—'}</td>
-        <td class="inv-stat ${remClass}">${total === 0 ? '—' : remaining}</td>
         <td class="col-del">
           <button class="btn-del" title="Remove" onclick="this.closest('tr').remove()">&#215;</button>
         </td>
       `;
+      // store hidden inventory fields on the row element for collectRows
+      tr.dataset.available      = p.available !== false ? 'true' : 'false';
+      tr.dataset.totalInventory = Number(p.totalInventory) || 0;
       return tr;
-    }
-
-    function toggleAvail(btn) {
-      const isAvail = btn.classList.contains('available');
-      btn.classList.toggle('available',   !isAvail);
-      btn.classList.toggle('unavailable',  isAvail);
-      btn.textContent = isAvail ? 'Unavailable' : 'Available';
-      btn.closest('tr').classList.toggle('unavailable-row', isAvail);
-    }
-
-    function updateRemainingCell(input) {
-      const tr        = input.closest('tr');
-      const name      = tr.querySelector('.f-name').value.trim();
-      const ordered   = orderedStats[name] || 0;
-      const total     = parseInt(input.value) || 0;
-      const remaining = total - ordered;
-      const remCell   = tr.querySelectorAll('.inv-stat')[1];
-      remCell.textContent = total === 0 ? '—' : remaining;
-      remCell.className   = 'inv-stat ' + (total === 0 ? '' : remaining <= 0 ? 'out' : remaining <= total * 0.2 ? 'low' : 'ok');
     }
 
     let nextId = 100;
@@ -533,8 +513,8 @@
         orderUnit:      tr.querySelector('.f-orderUnit').value,
         unitsPerOrder:  parseInt(tr.querySelector('.f-unitsPerOrder').value) || 1,
         unitLabel:      tr.querySelector('.f-unitLabel').value.trim(),
-        available:      tr.querySelector('.f-available').classList.contains('available'),
-        totalInventory: parseInt(tr.querySelector('.f-totalInventory').value) || 0,
+        available:      tr.dataset.available !== 'false',
+        totalInventory: parseInt(tr.dataset.totalInventory) || 0,
       })).filter(p => p.name);
     }
 
@@ -556,6 +536,148 @@
         setStatus('error', 'Save failed: ' + err.message);
         toast('Save failed.', 'error');
       }
+    }
+
+    /* ════════════════════════════════════════════════════════
+       INVENTORY TRACKER
+    ════════════════════════════════════════════════════════ */
+    let invProducts = [];  // current product list for the inventory tab
+
+    async function loadInventory() {
+      setInvStatus('loading', 'Loading inventory…');
+      try {
+        const [prodRes, ordersRes] = await Promise.all([
+          fetch(`${WEBHOOK}?action=getProducts`),
+          fetch(`${WEBHOOK}?action=getOrders`),
+        ]);
+        const prodData   = await prodRes.json();
+        const orderData  = await ordersRes.json();
+
+        invProducts = (Array.isArray(prodData) && prodData.length > 0 ? prodData : DEFAULTS)
+          .map(p => ({
+            ...p,
+            available:      p.available !== false && p.available !== 'false' && p.available !== 'FALSE',
+            totalInventory: Number(p.totalInventory) || 0,
+          }));
+
+        // Sum ordered units per product name (non-cancelled)
+        const stats = {};
+        (Array.isArray(orderData) ? orderData : [])
+          .filter(o => !o.cancelled)
+          .forEach(o => o.lines.forEach(l => {
+            stats[l.name] = (stats[l.name] || 0) + Number(l.units);
+          }));
+
+        renderInvTable(invProducts, stats);
+        setInvStatus('success', `${invProducts.length} products loaded.`);
+      } catch (err) {
+        setInvStatus('error', 'Could not load inventory: ' + err.message);
+      }
+    }
+
+    function renderInvTable(products, stats) {
+      const tbody = document.getElementById('invBody');
+      tbody.innerHTML = '';
+      products.forEach(p => {
+        const avail     = p.available !== false;
+        const total     = p.totalInventory;
+        const ordered   = stats[p.name] || 0;
+        const remaining = total - ordered;
+        const remClass  = total === 0 ? '' : remaining <= 0 ? 'out' : remaining <= total * 0.2 ? 'low' : 'ok';
+
+        const tr = document.createElement('tr');
+        tr.dataset.name = p.name;
+        if (!avail) tr.classList.add('unavailable-row');
+        tr.innerHTML = `
+          <td style="font-weight:600">${p.name}</td>
+          <td style="text-align:center">
+            <button class="btn-avail ${avail ? 'available' : 'unavailable'}"
+                    onclick="toggleInvAvail(this,'${p.name.replace(/'/g,"\\'")}')">
+              ${avail ? 'Available' : 'Unavailable'}
+            </button>
+          </td>
+          <td style="text-align:center">
+            <input type="number" class="inv-qty" value="${total}" min="0" step="1"
+                   style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.85rem;text-align:center"
+                   oninput="refreshRemaining(this,${ordered})" />
+          </td>
+          <td class="inv-stat">${ordered || '—'}</td>
+          <td class="inv-stat ${remClass}" id="rem-${p.name.replace(/\s+/g,'_')}">${total === 0 ? '—' : remaining}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleInvAvail(btn, name) {
+      const isAvail = btn.classList.contains('available');
+      btn.classList.toggle('available',   !isAvail);
+      btn.classList.toggle('unavailable',  isAvail);
+      btn.textContent = isAvail ? 'Unavailable' : 'Available';
+      btn.closest('tr').classList.toggle('unavailable-row', isAvail);
+      const p = invProducts.find(x => x.name === name);
+      if (p) p.available = !isAvail;
+      // also sync back to product table hidden fields
+      document.querySelectorAll('#productBody tr').forEach(tr => {
+        if (tr.dataset.name === name) tr.dataset.available = String(!isAvail);
+      });
+    }
+
+    function refreshRemaining(input, ordered) {
+      const total     = parseInt(input.value) || 0;
+      const remaining = total - ordered;
+      const tr        = input.closest('tr');
+      const remCell   = tr.querySelector('.inv-stat:last-child');
+      remCell.textContent = total === 0 ? '—' : remaining;
+      remCell.className   = 'inv-stat ' + (total === 0 ? '' : remaining <= 0 ? 'out' : remaining <= total * 0.2 ? 'low' : 'ok');
+    }
+
+    async function saveInventory() {
+      // Collect current inventory rows and merge back into product data
+      const rows = Array.from(document.querySelectorAll('#invBody tr'));
+      const updates = {};
+      rows.forEach(tr => {
+        const name  = tr.dataset.name;
+        const avail = tr.querySelector('.btn-avail').classList.contains('available');
+        const total = parseInt(tr.querySelector('.inv-qty').value) || 0;
+        updates[name] = { available: avail, totalInventory: total };
+      });
+
+      // Build full product list with updated inventory fields
+      const products = invProducts.map(p => ({
+        ...p,
+        available:      updates[p.name] ? updates[p.name].available      : p.available,
+        totalInventory: updates[p.name] ? updates[p.name].totalInventory : p.totalInventory,
+      }));
+
+      setInvStatus('loading', 'Saving inventory…');
+      try {
+        const url  = `${WEBHOOK}?action=saveProducts&payload=${encodeURIComponent(JSON.stringify(products))}`;
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'ok') {
+          setInvStatus('success', '✓ Inventory saved to sheet.');
+          toast('Inventory saved!', 'success');
+          // sync hidden fields on product rows too
+          document.querySelectorAll('#productBody tr').forEach(tr => {
+            const u = updates[tr.dataset.name];
+            if (u) {
+              tr.dataset.available      = String(u.available);
+              tr.dataset.totalInventory = u.totalInventory;
+            }
+          });
+        } else {
+          throw new Error(data.message || 'Unknown error');
+        }
+      } catch (err) {
+        setInvStatus('error', 'Save failed: ' + err.message);
+        toast('Save failed.', 'error');
+      }
+    }
+
+    function setInvStatus(type, msg) {
+      const el = document.getElementById('invStatusBar');
+      el.className   = 'status-bar ' + type;
+      el.textContent = msg;
     }
 
     /* ════════════════════════════════════════════════════════
