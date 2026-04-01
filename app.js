@@ -311,6 +311,14 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
   // Snapshot order data before clearing
   confirmedOrder = buildOrderData();
 
+  // Show submitting state in dialog
+  document.getElementById('dialogTitle').textContent = 'Submitting Order…';
+  document.getElementById('dialogBody').hidden = true;
+  const successEl = document.getElementById('dialogSuccess');
+  successEl.innerHTML = '<span style="color:#718096">Please wait — sending your order to Terra Nova…</span>';
+  successEl.hidden = false;
+  document.getElementById('footReview').hidden = true;
+
   // Clear the live order
   for (const id in order) delete order[id];
   document.querySelectorAll('.qty-input').forEach(i => { i.value = 0; });
@@ -319,23 +327,25 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
 
   // Log to Google Sheets + trigger email; get server-assigned order ID
   let orderId = null;
+  let submitError = false;
   try {
     orderId = await submitToGoogleSheet(confirmedOrder);
+    if (!orderId) submitError = true;
   } catch (err) {
     console.error('Submission error:', err);
+    submitError = true;
   }
   if (orderId) confirmedOrder.orderId = orderId;
 
   // Switch dialog to Confirmed state
-  document.getElementById('dialogTitle').textContent = 'Order Submitted';
-  const successEl = document.getElementById('dialogSuccess');
-  successEl.innerHTML = '<span class="success-icon">&#10003;</span>'
-    + (orderId ? ' Order <strong style="white-space:nowrap">' + orderId + '</strong>' : '')
-    + '<br>We have now received your order and will contact you shortly to process.'
-    + '<br>Thank you for your business. &nbsp;—&nbsp; Terra Nova';
-  successEl.hidden    = false;
-  document.getElementById('footReview').hidden       = true;
-  document.getElementById('footConfirmed').hidden    = false;
+  document.getElementById('dialogTitle').textContent = submitError ? 'Submission Problem' : 'Order Submitted';
+  successEl.innerHTML = submitError
+    ? '<span style="color:#c0392b">&#9888; Your order could not be recorded. Please email your order directly to Terra Nova.</span>'
+    : '<span class="success-icon">&#10003;</span>'
+      + ' Order <strong style="white-space:nowrap">' + orderId + '</strong>'
+      + '<br>We have now received your order and will contact you shortly to process.'
+      + '<br>Thank you for your business. &nbsp;—&nbsp; Terra Nova';
+  document.getElementById('footConfirmed').hidden = false;
 });
 
 // Start New Order — close dialog (order already cleared)
