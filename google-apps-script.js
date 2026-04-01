@@ -233,6 +233,9 @@ function sendOrderEmail(data) {
     + '</div></div>';
 
   MailApp.sendEmail({ to: ORDER_EMAIL, subject: 'New Terra Nova Order — ' + data.orderId, htmlBody: html });
+  if (data.vendorEmail) {
+    MailApp.sendEmail({ to: data.vendorEmail, subject: 'Your Terra Nova Order Confirmation — ' + data.orderId, htmlBody: html });
+  }
 }
 
 /* ── Orders: read (admin) ────────────────────────────────── */

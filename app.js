@@ -345,6 +345,7 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
     : '<span class="success-icon">&#10003;</span>'
       + ' Order <strong style="white-space:nowrap">' + orderId + '</strong>'
       + '<br>We have now received your order and will contact you shortly to process.'
+      + (vendor && vendor.email ? '<br>A confirmation has been sent to <strong>' + vendor.email + '</strong>.' : '')
       + '<br>Thank you for your business. &nbsp;—&nbsp; Terra Nova';
   document.getElementById('footConfirmed').hidden = false;
 });
@@ -391,7 +392,7 @@ async function submitToGoogleSheet(data) {
 /* ============================================================
    CSV EXPORT
    ============================================================ */
-document.getElementById('btnCSV').addEventListener('click', () => {
+document.getElementById('btnCSV') && document.getElementById('btnCSV').addEventListener('click', () => {
   if (!confirmedOrder) return;
   const { lines } = confirmedOrder;
   const header = [
@@ -424,7 +425,7 @@ document.getElementById('btnCSV').addEventListener('click', () => {
 /* ============================================================
    PDF / PRINT  (opens a clean print window)
    ============================================================ */
-document.getElementById('btnPrint').addEventListener('click', () => {
+document.getElementById('btnPrint') && document.getElementById('btnPrint').addEventListener('click', () => {
   if (!confirmedOrder) return;
   const { lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail } = confirmedOrder;
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
