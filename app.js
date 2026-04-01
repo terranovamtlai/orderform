@@ -513,6 +513,8 @@ lightbox.addEventListener('click', e => { if (e.target === lightbox) lightbox.cl
    INIT — load products from Google Sheets
    ============================================================ */
 async function init() {
+  document.getElementById('productBody').innerHTML =
+    `<tr><td colspan="7" style="text-align:center;padding:40px;color:#718096">Loading products&hellip;</td></tr>`;
   try {
     const res  = await fetch(`${SHEETS_WEBHOOK_URL}?action=getProducts`);
     const data = await res.json();
