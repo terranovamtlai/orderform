@@ -7,6 +7,7 @@
  *   getProducts    — returns Products sheet as JSON array
  *   saveProducts   — writes payload JSON to Products sheet
  *   submitOrder    — logs order to Orders sheet + sends email  (default)
+ *   orderform
  */
 
 const ORDER_EMAIL       = 'terranovamtlai@gmail.com';
