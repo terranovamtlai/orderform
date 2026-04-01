@@ -66,11 +66,20 @@ body {
   color: var(--navy);
 }
 .brand-sub { font-size: .78rem; color: var(--muted); }
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .season-tag {
   background: var(--navy);
   border-radius: 20px;
   padding: 4px 14px;
   font-size: .78rem;
+  color: #fff;
+  white-space: nowrap;
+}
+.vendor-badge {
+  background: var(--orange);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: .75rem;
   color: #fff;
   white-space: nowrap;
 }

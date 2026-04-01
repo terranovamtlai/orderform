@@ -17,11 +17,22 @@
           <span class="brand-sub">Wholesale Order Form &middot; Novelty Fun Socks 6-Pack Range</span>
         </div>
       </div>
-      <span class="season-tag">2026 Collection</span>
+      <div class="header-right">
+        <span class="season-tag">2026 Collection</span>
+        <span class="vendor-badge" id="vendorBadge" hidden></span>
+      </div>
     </div>
   </header>
 
-  <div class="layout">
+  <!-- Locked: shown when no valid vendor code in URL -->
+  <div id="layoutLocked" hidden style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px;color:#4a5568">
+    <img src="images/image1.png" alt="Terra Nova" style="height:70px;margin-bottom:20px" />
+    <h2 style="font-size:1.4rem;margin:0 0 12px;color:#1e3a5f">Access Required</h2>
+    <p style="max-width:400px;line-height:1.6;margin:0">This wholesale order form requires a personalised link.<br>
+    Please email <a href="mailto:terranovamtlai@gmail.com" style="color:#f26522">terranovamtlai@gmail.com</a> to request access.</p>
+  </div>
+
+  <div class="layout" id="layout">
 
     <main class="catalog">
       <div class="catalog-intro">

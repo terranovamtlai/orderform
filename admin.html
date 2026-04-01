@@ -255,6 +255,7 @@
       <button class="tab-btn active" onclick="switchTab('products')">Products</button>
       <button class="tab-btn"        onclick="switchTab('inventory')">Inventory Tracker</button>
       <button class="tab-btn"        onclick="switchTab('orders')">Orders</button>
+      <button class="tab-btn"        onclick="switchTab('vendors')">Vendors</button>
     </nav>
 
     <!-- ── Products tab ── -->
@@ -355,6 +356,34 @@
       </div>
     </div>
 
+    <!-- ── Vendors tab ── -->
+    <div class="tab-panel" id="tab-vendors">
+      <div class="admin-body">
+        <div class="toolbar">
+          <h2>Vendors</h2>
+          <div class="toolbar-actions">
+            <button class="btn btn-secondary" onclick="loadVendors()">&#8635; Refresh</button>
+            <button class="btn btn-primary"   onclick="addVendor()">+ Add Vendor</button>
+            <button class="btn btn-success"   onclick="saveVendors()">&#10003; Save to Sheet</button>
+          </div>
+        </div>
+        <div class="status-bar" id="vendorStatusBar"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:130px">Code</th>
+                <th>Company Name</th>
+                <th>Email</th>
+                <th style="width:160px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="vendorBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>
@@ -423,6 +452,111 @@
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'orders')    loadOrders();
       if (name === 'inventory') loadInventory();
+      if (name === 'vendors')   loadVendors();
+    }
+
+    /* ════════════════════════════════════════════════════════
+       VENDORS
+    ════════════════════════════════════════════════════════ */
+    let allVendors = [];
+
+    function generateCode() {
+      return Math.random().toString(36).substr(2, 8).toUpperCase();
+    }
+
+    function getOrderFormURL(code) {
+      return window.location.href.replace(/admin\.html.*$/, 'index.html') + '?vendor=' + code;
+    }
+
+    function setVendorStatus(type, msg) {
+      const bar = document.getElementById('vendorStatusBar');
+      bar.className = 'status-bar status-' + type;
+      bar.textContent = msg;
+    }
+
+    async function loadVendors() {
+      setVendorStatus('loading', 'Loading vendors\u2026');
+      try {
+        const res = await fetch(`${WEBHOOK}?action=getVendors`);
+        allVendors = await res.json();
+        renderVendorTable();
+        setVendorStatus('success', allVendors.length + ' vendor(s) loaded.');
+      } catch (err) {
+        setVendorStatus('error', 'Could not load vendors: ' + err.message);
+      }
+    }
+
+    function renderVendorTable() {
+      const tbody = document.getElementById('vendorBody');
+      if (!allVendors.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:#718096">No vendors yet. Click + Add Vendor to get started.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = allVendors.map(function(v) { return makeVendorRow(v); }).join('');
+    }
+
+    function makeVendorRow(v) {
+      return '<tr>'
+        + '<td><code style="font-size:.8rem;letter-spacing:.05em">' + v.code + '</code></td>'
+        + '<td><input type="text" class="f-vcompany" value="' + (v.company || '') + '" placeholder="Company name" style="width:100%" /></td>'
+        + '<td><input type="text" class="f-vemail"   value="' + (v.email   || '') + '" placeholder="Email address" style="width:100%" /></td>'
+        + '<td style="white-space:nowrap;display:flex;gap:6px">'
+        + '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="copyVendorURL(\'' + v.code + '\', this)">Get URL</button>'
+        + '<button class="btn btn-danger"    style="font-size:.75rem;padding:4px 10px" onclick="this.closest(\'tr\').remove()">Delete</button>'
+        + '</td>'
+        + '</tr>';
+    }
+
+    function addVendor() {
+      const tbody = document.getElementById('vendorBody');
+      if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+      const code = generateCode();
+      const tr = document.createElement('tr');
+      tr.innerHTML = makeVendorRow({ code, company: '', email: '' });
+      tbody.appendChild(tr);
+    }
+
+    function collectVendors() {
+      return Array.from(document.querySelectorAll('#vendorBody tr'))
+        .filter(function(tr) { return !tr.querySelector('td[colspan]'); })
+        .map(function(tr) {
+          return {
+            code:    tr.querySelector('code').textContent.trim(),
+            company: tr.querySelector('.f-vcompany').value.trim(),
+            email:   tr.querySelector('.f-vemail').value.trim(),
+          };
+        })
+        .filter(function(v) { return v.company; });
+    }
+
+    async function saveVendors() {
+      const vendors = collectVendors();
+      setVendorStatus('loading', 'Saving\u2026');
+      try {
+        const url = WEBHOOK + '?action=saveVendors&payload=' + encodeURIComponent(JSON.stringify(vendors));
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'ok') {
+          allVendors = vendors;
+          setVendorStatus('success', '\u2713 ' + vendors.length + ' vendor(s) saved.');
+          toast('Vendors saved!', 'success');
+        }
+      } catch (err) {
+        setVendorStatus('error', 'Could not save vendors: ' + err.message);
+      }
+    }
+
+    function copyVendorURL(code, btn) {
+      const url = getOrderFormURL(code);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(function() {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(function() { btn.textContent = orig; }, 2000);
+        });
+      } else {
+        prompt('Copy this URL:', url);
+      }
     }
 
     /* ════════════════════════════════════════════════════════

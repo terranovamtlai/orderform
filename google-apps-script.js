@@ -15,6 +15,7 @@ const SPREADSHEET_ID    = '10H9CTzRHUGK6SrukXklahr0ebQvJR8bueNL8VZEmses';
 const ORDERS_SHEET      = 'Orders';
 const PRODUCTS_SHEET    = 'Products';
 const COUNTER_SHEET     = 'Counter';
+const VENDORS_SHEET     = 'Vendors';
 
 function getSpreadsheet() {
   return SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -48,11 +49,14 @@ function getNextOrderId() {
 function doGet(e) {
   const action = (e.parameter && e.parameter.action) || 'submitOrder';
   try {
-    if      (action === 'getProducts')      return handleGetProducts();
-    else if (action === 'saveProducts')     return handleSaveProducts(e);
-    else if (action === 'getOrders')        return handleGetOrders();
+    if      (action === 'getProducts')       return handleGetProducts();
+    else if (action === 'saveProducts')      return handleSaveProducts(e);
+    else if (action === 'getOrders')         return handleGetOrders();
     else if (action === 'updateOrderStatus') return handleUpdateOrderStatus(e);
-    else                                    return handleSubmitOrder(e);
+    else if (action === 'getVendor')         return handleGetVendor(e);
+    else if (action === 'getVendors')        return handleGetVendors();
+    else if (action === 'saveVendors')       return handleSaveVendors(e);
+    else                                     return handleSubmitOrder(e);
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
   }
@@ -158,6 +162,8 @@ function handleSubmitOrder(e) {
       'Order Unit','Order Qty','Total Units',
       'Wholesale/Unit ($)','Line Wholesale ($)',
       'SRP/Unit ($)','Line SRP ($)',
+      'Order Sent','Invoice Sent','Payment Received','Cancelled',
+      'Company','Vendor Code',
     ];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
@@ -182,6 +188,9 @@ function handleSubmitOrder(e) {
     data.totalOrderUnits, data.totalIndividualUnits,
     '', data.totalWholesale,
     '', data.totalRetail,
+    '','','','',                  // status checkboxes (cols 13–16)
+    data.vendorCompany || '',     // col 17
+    data.vendorCode    || '',     // col 18
   ]);
   sheet.getRange(sheet.getLastRow(), 1, 1, 12)
        .setFontStyle('italic')
@@ -208,7 +217,7 @@ function sendOrderEmail(data) {
     + '<h1 style="color:#fff;margin:0;font-size:1.3rem">Terra Nova — New Wholesale Order</h1>'
     + '</div>'
     + '<div style="padding:24px">'
-    + '<p style="color:#718096;margin:0 0 16px">Order <strong>' + data.orderId + '</strong> &nbsp;·&nbsp; ' + data.date + '</p>'
+    + '<p style="color:#718096;margin:0 0 16px">Order <strong>' + data.orderId + '</strong> &nbsp;·&nbsp; ' + data.date + (data.vendorCompany ? ' &nbsp;·&nbsp; <strong>' + data.vendorCompany + '</strong>' : '') + '</p>'
     + '<table style="width:100%;border-collapse:collapse">'
     + '<thead><tr style="background:#f0f4f8">'
     + th('Product') + th('Order Qty') + th('Total Units') + th('Line Total', 'right')
@@ -303,6 +312,44 @@ function handleUpdateOrderStatus(e) {
     }
   }
   return json({ status: 'error', message: 'Order not found: ' + orderId });
+}
+
+/* ── Vendors ─────────────────────────────────────────────── */
+function handleGetVendor(e) {
+  var code  = ((e.parameter && e.parameter.code) || '').trim().toUpperCase();
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(VENDORS_SHEET);
+  if (!sheet || sheet.getLastRow() < 2) return json({ status: 'notfound' });
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).toUpperCase() === code) {
+      return json({ status: 'ok', code: rows[i][0], company: rows[i][1], email: rows[i][2] });
+    }
+  }
+  return json({ status: 'notfound' });
+}
+
+function handleGetVendors() {
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(VENDORS_SHEET);
+  if (!sheet || sheet.getLastRow() < 2) return json([]);
+  var rows = sheet.getDataRange().getValues();
+  return json(rows.slice(1).filter(function(r) { return r[0]; }).map(function(r) {
+    return { code: r[0], company: r[1], email: r[2] };
+  }));
+}
+
+function handleSaveVendors(e) {
+  var vendors = JSON.parse(e.parameter.payload);
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(VENDORS_SHEET);
+  if (!sheet) sheet = ss.insertSheet(VENDORS_SHEET);
+  sheet.clearContents();
+  sheet.appendRow(['code', 'company', 'email']);
+  sheet.getRange(1, 1, 1, 3).setFontWeight('bold');
+  sheet.setFrozenRows(1);
+  vendors.forEach(function(v) { sheet.appendRow([v.code, v.company, v.email]); });
+  return json({ status: 'ok', saved: vendors.length });
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */

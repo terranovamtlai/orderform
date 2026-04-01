@@ -20,6 +20,7 @@ let products = [];
    ORDER STATE  { productId: quantity }
    ============================================================ */
 const order = {};
+let vendor  = null;
 
 /* ============================================================
    HELPERS
@@ -374,6 +375,9 @@ async function submitToGoogleSheet(data) {
     totalIndividualUnits: data.totalIndividualUnits,
     totalWholesale:       data.totalWholesale,
     totalRetail:          data.totalRetail,
+    vendorCode:           vendor ? vendor.code    : '',
+    vendorCompany:        vendor ? vendor.company : '',
+    vendorEmail:          vendor ? vendor.email   : '',
   };
 
   // Use GET + URL params — POST bodies are silently dropped by Google's
@@ -523,11 +527,33 @@ lightbox.addEventListener('click', e => { if (e.target === lightbox) lightbox.cl
    INIT — load products from Google Sheets
    ============================================================ */
 async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get('vendor');
+
+  if (!code) {
+    showLockedMessage();
+    return;
+  }
+
   document.getElementById('productBody').innerHTML =
     `<tr><td colspan="7" style="text-align:center;padding:40px;color:#718096">Loading products&hellip;</td></tr>`;
+
   try {
-    const res  = await fetch(`${SHEETS_WEBHOOK_URL}?action=getProducts`);
-    const data = await res.json();
+    const [vendorRes, prodRes] = await Promise.all([
+      fetch(`${SHEETS_WEBHOOK_URL}?action=getVendor&code=${encodeURIComponent(code)}`),
+      fetch(`${SHEETS_WEBHOOK_URL}?action=getProducts`)
+    ]);
+    const vendorData = await vendorRes.json();
+    if (!vendorData || vendorData.status !== 'ok') {
+      showLockedMessage();
+      return;
+    }
+    vendor = vendorData;
+    const badge = document.getElementById('vendorBadge');
+    badge.textContent = vendorData.company;
+    badge.hidden = false;
+
+    const data = await prodRes.json();
     if (Array.isArray(data) && data.length > 0) {
       products = data.map(p => ({
         ...p,
@@ -548,6 +574,11 @@ async function init() {
   }
   renderProducts();
   updateSummary();
+}
+
+function showLockedMessage() {
+  document.getElementById('layout').hidden = true;
+  document.getElementById('layoutLocked').hidden = false;
 }
 
 function showCatalogueError(msg) {
