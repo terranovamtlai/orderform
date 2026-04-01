@@ -1,6 +1,5 @@
-# Google clasp credentials and config (IMPORTANT: Do not commit these!)
+# Google clasp credentials (IMPORTANT: Do not commit these!)
 .clasprc.json
-.clasp.json
 
 # Local Node.js dependencies
 node_modules/

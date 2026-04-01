@@ -9,14 +9,19 @@
  *   submitOrder    — logs order to Orders sheet + sends email  (default)
  */
 
-const ORDER_EMAIL     = 'terranovamtlai@gmail.com';
-const ORDERS_SHEET    = 'Orders';
-const PRODUCTS_SHEET  = 'Products';
-const COUNTER_SHEET   = 'Counter';
+const ORDER_EMAIL       = 'terranovamtlai@gmail.com';
+const SPREADSHEET_ID    = '10H9CTzRHUGK6SrukXklahr0ebQvJR8bueNL8VZEmses';
+const ORDERS_SHEET      = 'Orders';
+const PRODUCTS_SHEET    = 'Products';
+const COUNTER_SHEET     = 'Counter';
+
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
 
 /* ── Order ID generator (persistent counter) ─────────────── */
 function getNextOrderId() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet();
   let counterSheet = ss.getSheetByName(COUNTER_SHEET);
   if (!counterSheet) {
     counterSheet = ss.insertSheet(COUNTER_SHEET);
@@ -54,7 +59,7 @@ function doGet(e) {
 
 /* ── Products: read ──────────────────────────────────────── */
 function handleGetProducts() {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const ss    = getSpreadsheet();
   const sheet = ss.getSheetByName(PRODUCTS_SHEET);
 
   if (!sheet || sheet.getLastRow() < 2) {
@@ -107,7 +112,7 @@ function handleGetProducts() {
 /* ── Products: write ─────────────────────────────────────── */
 function handleSaveProducts(e) {
   const products = JSON.parse(e.parameter.payload);
-  const ss       = SpreadsheetApp.getActiveSpreadsheet();
+  const ss       = getSpreadsheet();
   let   sheet    = ss.getSheetByName(PRODUCTS_SHEET);
 
   if (!sheet) {
@@ -139,7 +144,7 @@ function handleSubmitOrder(e) {
   const date    = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
   data.orderId  = orderId;
   data.date     = date;
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const ss    = getSpreadsheet();
   let   sheet = ss.getSheetByName(ORDERS_SHEET);
 
   if (!sheet) {
@@ -222,7 +227,7 @@ function sendOrderEmail(data) {
 
 /* ── Orders: read (admin) ────────────────────────────────── */
 function handleGetOrders() {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const ss    = getSpreadsheet();
   const sheet = ss.getSheetByName(ORDERS_SHEET);
   if (!sheet || sheet.getLastRow() < 2) return json([]);
 
@@ -285,7 +290,7 @@ function handleUpdateOrderStatus(e) {
   var col    = colMap[field];
   if (!col) return json({ status: 'error', message: 'Unknown field: ' + field });
 
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(ORDERS_SHEET);
   if (!sheet) return json({ status: 'error', message: 'Orders sheet not found' });
 
