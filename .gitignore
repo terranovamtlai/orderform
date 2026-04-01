@@ -1,0 +1,10 @@
+# Google clasp credentials (IMPORTANT: Do not commit these!)
+.clasprc.json
+
+# Local Node.js dependencies
+node_modules/
+dist/
+
+# System files
+.DS_Store
+Thumbs.db

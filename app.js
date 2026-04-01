@@ -2,7 +2,7 @@
    CONFIGURATION
    ============================================================ */
 const CURRENCY = '$';
-const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyLHoKCqkTmzZgpHmwrRhB6fggm8Ua6py7_H5nY6qpyD9AzcMxTqdpD_Pb4iWb4TD1t/exec';
+const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwvveBT8M11c2gCZ0utPNySEQtwtbH2G7OxDePMeX41DkeC6Jr3bSiIfBxcRhKftcZ1Wg/exec';
 
 /* ============================================================
    PRODUCT DATA
