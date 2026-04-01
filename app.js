@@ -542,7 +542,7 @@ async function init() {
   try {
     const [vendorRes, prodRes] = await Promise.all([
       fetch(`${SHEETS_WEBHOOK_URL}?action=getVendor&code=${encodeURIComponent(code)}`),
-      fetch(`${SHEETS_WEBHOOK_URL}?action=getProducts`)
+      fetch(`${SHEETS_WEBHOOK_URL}?action=getProducts&vendor=${encodeURIComponent(code)}`)
     ]);
     const vendorData = await vendorRes.json();
     if (!vendorData || vendorData.status !== 'ok') {

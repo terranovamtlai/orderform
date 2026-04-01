@@ -49,7 +49,7 @@ function getNextOrderId() {
 function doGet(e) {
   const action = (e.parameter && e.parameter.action) || 'submitOrder';
   try {
-    if      (action === 'getProducts')       return handleGetProducts();
+    if      (action === 'getProducts')       return handleGetProducts(e);
     else if (action === 'saveProducts')      return handleSaveProducts(e);
     else if (action === 'getOrders')         return handleGetOrders();
     else if (action === 'updateOrderStatus') return handleUpdateOrderStatus(e);
@@ -63,7 +63,11 @@ function doGet(e) {
 }
 
 /* ── Products: read ──────────────────────────────────────── */
-function handleGetProducts() {
+function handleGetProducts(e) {
+  var vendorCode = (e && e.parameter && e.parameter.vendor)
+    ? e.parameter.vendor.trim().toUpperCase()
+    : null;
+
   const ss    = getSpreadsheet();
   const sheet = ss.getSheetByName(PRODUCTS_SHEET);
 
@@ -73,7 +77,7 @@ function handleGetProducts() {
 
   const rows    = sheet.getDataRange().getValues();
   const headers = rows[0];
-  const products = rows.slice(1)
+  var products = rows.slice(1)
     .filter(r => r[0] !== '')
     .map(r => {
       const obj = {};
@@ -103,13 +107,28 @@ function handleGetProducts() {
     });
   }
 
-  // Attach remaining stock to each product
-  // remaining = null means no inventory limit set (totalInventory = 0)
+  // Attach remaining stock and normalise status field
   products.forEach(function(p) {
     var total = Number(p.totalInventory) || 0;
     p.ordered   = orderedMap[p.name] || 0;
     p.remaining = total > 0 ? Math.max(0, total - p.ordered) : null;
+    // normalise: old rows have available bool, new rows have status string
+    if (!p.status) {
+      p.status = (p.available !== false && p.available !== 'FALSE') ? 'available' : 'unavailable';
+    }
+    p.available = (p.status === 'available');
   });
+
+  // When called with a vendor code (customer context): filter hidden + vendor-restricted products
+  if (vendorCode) {
+    products = products.filter(function(p) {
+      if (p.status === 'hidden') return false;
+      var codes = [];
+      try { codes = JSON.parse(p.vendorCodes || '[]'); } catch (ignored) {}
+      if (codes.length > 0 && codes.map(function(c) { return c.toUpperCase(); }).indexOf(vendorCode) === -1) return false;
+      return true;
+    });
+  }
 
   return json(products);
 }
@@ -125,17 +144,20 @@ function handleSaveProducts(e) {
   }
 
   sheet.clearContents();
-  const headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','totalInventory'];
+  const headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','totalInventory','status','vendorCodes'];
   sheet.appendRow(headers);
   sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
   sheet.setFrozenRows(1);
 
   products.forEach(function(p) {
+    var status = p.status || (p.available !== false ? 'available' : 'unavailable');
     sheet.appendRow([
       p.id, p.name, p.barcode, p.sku,
       Number(p.srp), Number(p.wholesale),
       p.img, p.orderUnit, Number(p.unitsPerOrder), p.unitLabel,
-      p.available !== false, Number(p.totalInventory) || 0,
+      status === 'available', Number(p.totalInventory) || 0,
+      status,
+      p.vendorCodes || '[]',
     ]);
   });
 
