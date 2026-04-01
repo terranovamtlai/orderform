@@ -25,3 +25,6 @@ jobs:
 
       - name: Push to Apps Script
         run: clasp push --force
+
+      - name: Redeploy web app
+        run: clasp deploy --deploymentId AKfycbwvveBT8M11c2gCZ0utPNySEQtwtbH2G7OxDePMeX41DkeC6Jr3bSiIfBxcRhKftcZ1Wg --description "Auto-deploy from GitHub Actions"
