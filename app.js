@@ -84,7 +84,7 @@ function renderProducts() {
   `;
   }).join('');
 
-  document.getElementById('productBody').insertAdjacentHTML('afterbegin', rows);
+  document.getElementById('productBody').innerHTML = rows;
 }
 
 /* ============================================================
