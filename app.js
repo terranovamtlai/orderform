@@ -54,7 +54,7 @@ function renderProducts() {
     <tr data-id="${p.id}" class="${!avail ? 'product-unavailable' : ''}">
       <td>
         <div class="product-cell">
-          <img class="product-img" src="${p.img}" alt="${p.name}" loading="lazy" />
+          <img class="product-img" src="images/${p.img.replace(/^images\//, '')}" alt="${p.name}" loading="lazy" />
           <div>
             <div class="product-name">${p.name}${!avail ? ' <span class="unavail-badge">Unavailable</span>' : ''}</div>
             <div class="product-desc">1 ${p.orderUnit} = ${p.unitsPerOrder} ${p.unitLabel}</div>
@@ -500,7 +500,7 @@ document.getElementById('productBody').addEventListener('click', e => {
   if (!img) return;
   const id = parseInt(img.closest('tr').dataset.id, 10);
   const product = products.find(p => p.id === id);
-  lightboxImg.src = product.img;
+  lightboxImg.src = 'images/' + product.img.replace(/^images\//, '');
   lightboxImg.alt = product.name;
   lightboxCaption.textContent = product.name;
   lightbox.showModal();

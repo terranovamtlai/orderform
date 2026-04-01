@@ -463,9 +463,9 @@
       tr.dataset.name = p.name;
       tr.innerHTML = `
         <td class="col-img">
-          <img src="${p.img}" alt="" onerror="this.src='images/image1.png'" />
-          <input type="text" class="f-img" value="${p.img}" placeholder="images/imageX.png"
-                 oninput="this.closest('tr').querySelector('img').src=this.value" />
+          <img src="images/${p.img.replace(/^images\//,'')}" alt="" onerror="this.src='images/image1.png'" />
+          <input type="text" class="f-img" value="${p.img.replace(/^images\//,'')}" placeholder="image1.png"
+                 oninput="this.closest('tr').querySelector('img').src='images/'+this.value" />
         </td>
         <td><input type="text"   class="f-name"          value="${p.name}"          /></td>
         <td><input type="text"   class="f-barcode"       value="${p.barcode}"       /></td>
@@ -509,7 +509,7 @@
         sku:            tr.querySelector('.f-sku').value.trim(),
         srp:            parseFloat(tr.querySelector('.f-srp').value) || 0,
         wholesale:      parseFloat(tr.querySelector('.f-wholesale').value) || 0,
-        img:            tr.querySelector('.f-img').value.trim(),
+        img:            tr.querySelector('.f-img').value.trim().replace(/^images\//, ''),
         orderUnit:      tr.querySelector('.f-orderUnit').value,
         unitsPerOrder:  parseInt(tr.querySelector('.f-unitsPerOrder').value) || 1,
         unitLabel:      tr.querySelector('.f-unitLabel').value.trim(),
