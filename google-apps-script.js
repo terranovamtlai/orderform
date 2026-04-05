@@ -50,6 +50,8 @@ function doGet(e) {
   const action = (e.parameter && e.parameter.action) || 'submitOrder';
   try {
     if      (action === 'getProducts')       return handleGetProducts(e);
+    else if (action === 'saveProduct')       return handleSaveProduct(e);
+    else if (action === 'deleteProduct')     return handleDeleteProduct(e);
     else if (action === 'saveProducts')      return handleSaveProducts(e);
     else if (action === 'getOrders')         return handleGetOrders();
     else if (action === 'updateOrderStatus') return handleUpdateOrderStatus(e);
@@ -105,6 +107,60 @@ function handleGetProducts(e) {
   }
 
   return json(products);
+}
+
+/* ── Products: upsert single row ────────────────────────────── */
+function handleSaveProduct(e) {
+  var p      = JSON.parse(e.parameter.payload);
+  var ss     = getSpreadsheet();
+  var sheet  = ss.getSheetByName(PRODUCTS_SHEET);
+  if (!sheet) sheet = ss.insertSheet(PRODUCTS_SHEET);
+
+  // Ensure headers exist
+  if (sheet.getLastRow() === 0) {
+    var headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category'];
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+
+  var status = p.status || (p.available !== false ? 'available' : 'unavailable');
+  var rowData = [
+    p.id, p.name, p.barcode, p.sku,
+    Number(p.srp), Number(p.wholesale),
+    p.img, p.orderUnit, Number(p.unitsPerOrder), p.unitLabel,
+    status === 'available', status,
+    p.vendorCodes || '[]',
+    p.category || 'Gift Novelties',
+  ];
+
+  // Find existing row by id
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(p.id)) {
+      sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
+      return json({ status: 'ok', action: 'updated' });
+    }
+  }
+  // Not found — append
+  sheet.appendRow(rowData);
+  return json({ status: 'ok', action: 'inserted' });
+}
+
+/* ── Products: delete single row by id ──────────────────────── */
+function handleDeleteProduct(e) {
+  var id    = String(e.parameter.id);
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(PRODUCTS_SHEET);
+  if (!sheet) return json({ status: 'error', message: 'Products sheet not found' });
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === id) {
+      sheet.deleteRow(i + 1);
+      return json({ status: 'ok' });
+    }
+  }
+  return json({ status: 'error', message: 'Product not found: ' + id });
 }
 
 /* ── Products: write (supports chunked saves via append=true) ── */

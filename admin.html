@@ -305,15 +305,6 @@
       background: var(--bg); flex-shrink: 0;
     }
 
-    /* ── Unsaved changes banner ── */
-    #unsavedBanner {
-      display: none; align-items: center; gap: 10px;
-      background: #fffbeb; border: 1px solid #f6d860; border-radius: 6px;
-      padding: 10px 16px; margin-bottom: 16px;
-      font-size: .85rem; font-weight: 600; color: #92400e;
-    }
-    #unsavedBanner.show { display: flex; }
-    #unsavedBanner .banner-icon { font-size: 1rem; }
   </style>
 </head>
 <body>
@@ -362,14 +353,10 @@
             <button class="btn btn-secondary" onclick="expandCollapseAll(false)">Collapse All</button>
             <button class="btn btn-secondary" onclick="showNewCategoryPrompt()">+ New Category</button>
             <button class="btn btn-primary"   onclick="openProductModal(null)">+ Add Product</button>
-            <button class="btn btn-secondary" id="btnSaveProducts" onclick="saveProducts()">&#10003; Save to Sheet</button>
+            <button class="btn btn-secondary" onclick="saveProducts()">&#8635; Rebuild Sheet</button>
           </div>
         </div>
         <div class="status-bar" id="statusBar"></div>
-        <div id="unsavedBanner">
-          <span class="banner-icon">⚠</span>
-          Changes not yet saved — click <strong>&nbsp;Save to Sheet&nbsp;</strong> to persist.
-        </div>
         <div id="productCatalog"></div>
       </div>
     </div>
@@ -707,18 +694,28 @@
     let editingIdx    = null;
     const expandedCats = new Set();
 
-    function markDirty() {
-      document.getElementById('unsavedBanner').classList.add('show');
-      const btn = document.getElementById('btnSaveProducts');
-      btn.classList.remove('btn-secondary');
-      btn.classList.add('btn-success');
+    async function persistProduct(p) {
+      try {
+        const url = `${WEBHOOK}?action=saveProduct&payload=${encodeURIComponent(JSON.stringify(p))}`;
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
+      } catch (err) {
+        toast('Save failed: ' + err.message, 'error');
+        setStatus('error', 'Save failed: ' + err.message);
+      }
     }
 
-    function markClean() {
-      document.getElementById('unsavedBanner').classList.remove('show');
-      const btn = document.getElementById('btnSaveProducts');
-      btn.classList.remove('btn-success');
-      btn.classList.add('btn-secondary');
+    async function persistDeleteProduct(id) {
+      try {
+        const url = `${WEBHOOK}?action=deleteProduct&id=${encodeURIComponent(id)}`;
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
+      } catch (err) {
+        toast('Delete failed: ' + err.message, 'error');
+        setStatus('error', 'Delete failed: ' + err.message);
+      }
     }
 
     function safeCatId(cat) { return 'cat_' + cat.replace(/[^a-z0-9]/gi, '_'); }
@@ -769,7 +766,6 @@
         // Pick up any categories from the sheet not in our default list
         allProducts.forEach(p => { if (p.category && !allCategories.includes(p.category)) allCategories.push(p.category); });
         renderTable();
-        markClean();
         setStatus('success', data.length > 0
           ? `Loaded ${data.length} products.`
           : 'Sheet is empty — showing defaults. Save to populate the sheet.');
@@ -852,16 +848,17 @@
     }
 
     function updateProductStatus(idx, status) {
-      allProducts[idx].status   = status;
+      allProducts[idx].status    = status;
       allProducts[idx].available = status === 'available';
-      markDirty();
+      persistProduct(allProducts[idx]);
     }
 
     function deleteProduct(idx) {
       if (!confirm(`Delete "${allProducts[idx].name}"?`)) return;
+      const id = allProducts[idx].id;
       allProducts.splice(idx, 1);
       renderTable();
-      markDirty();
+      persistDeleteProduct(id);
     }
 
     function showNewCategoryPrompt() {
@@ -943,14 +940,17 @@
         category:      document.getElementById('m-category').value,
         vendorCodes:   JSON.stringify(codes),
       };
+      let saved;
       if (editingIdx !== null) {
         allProducts[editingIdx] = { ...allProducts[editingIdx], ...prod };
+        saved = allProducts[editingIdx];
       } else {
-        allProducts.push({ id: allProducts.length + 1, ...prod });
+        saved = { id: allProducts.length + 1, ...prod };
+        allProducts.push(saved);
       }
       closeModal();
       renderTable();
-      markDirty();
+      persistProduct(saved);
       toast(editingIdx !== null ? 'Product updated.' : 'Product added.', 'success');
     }
 
@@ -975,9 +975,8 @@
           saved += data.saved;
           setStatus('loading', `Saving to sheet… (${saved} / ${products.length})`);
         }
-        markClean();
         setStatus('success', `✓ ${saved} products saved to sheet.`);
-        toast('Products saved!', 'success');
+        toast('Sheet rebuilt!', 'success');
       } catch (err) {
         setStatus('error', 'Save failed: ' + err.message);
         toast('Save failed.', 'error');
