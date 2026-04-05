@@ -227,9 +227,12 @@
       display: flex; align-items: center; justify-content: space-between;
       background: var(--navy); color: #fff;
       padding: 10px 16px; border-radius: 8px 8px 0 0;
-      font-size: .88rem; font-weight: 600;
+      font-size: .88rem; font-weight: 600; cursor: pointer;
+      user-select: none;
     }
+    .cat-header:hover { background: var(--navy-lt); }
     .cat-header-left { display: flex; align-items: center; gap: 10px; }
+    .cat-arrow { font-size: .72rem; opacity: .7; width: 12px; display: inline-block; }
     .cat-count {
       background: rgba(255,255,255,.2); border-radius: 10px;
       padding: 2px 8px; font-size: .72rem; font-weight: 600;
@@ -265,6 +268,8 @@
       box-shadow: 0 20px 60px rgba(0,0,0,.3);
       padding: 0; width: 620px; max-width: 95vw;
       max-height: 90vh; overflow: hidden;
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); margin: 0;
     }
     #productModal[open] { display: flex; flex-direction: column; }
     #productModal::backdrop { background: rgba(0,0,0,.5); }
@@ -343,6 +348,8 @@
           <h2>Products</h2>
           <div class="toolbar-actions">
             <button class="btn btn-secondary" onclick="loadProducts()">&#8635; Refresh</button>
+            <button class="btn btn-secondary" onclick="expandCollapseAll(true)">Expand All</button>
+            <button class="btn btn-secondary" onclick="expandCollapseAll(false)">Collapse All</button>
             <button class="btn btn-secondary" onclick="showNewCategoryPrompt()">+ New Category</button>
             <button class="btn btn-primary"   onclick="openProductModal(null)">+ Add Product</button>
             <button class="btn btn-success"   onclick="saveProducts()">&#10003; Save to Sheet</button>
@@ -681,9 +688,32 @@
     /* ════════════════════════════════════════════════════════
        PRODUCTS
     ════════════════════════════════════════════════════════ */
-    let allProducts  = [];
+    let allProducts   = [];
     let allCategories = ['Beddings', 'Gift Novelties', 'Sports Attire (Women / Men)', 'Promotional Sales'];
-    let editingIdx   = null;
+    let editingIdx    = null;
+    const expandedCats = new Set();
+
+    function safeCatId(cat) { return 'cat_' + cat.replace(/[^a-z0-9]/gi, '_'); }
+
+    function toggleCatAdmin(cat) {
+      const id    = safeCatId(cat);
+      const body  = document.getElementById(id);
+      const arrow = document.getElementById('arrow_' + id);
+      if (expandedCats.has(cat)) {
+        expandedCats.delete(cat);
+        if (body)  body.style.display  = 'none';
+        if (arrow) arrow.textContent   = '▶';
+      } else {
+        expandedCats.add(cat);
+        if (body)  body.style.display  = '';
+        if (arrow) arrow.textContent   = '▼';
+      }
+    }
+
+    function expandCollapseAll(expand) {
+      allCategories.forEach(c => expand ? expandedCats.add(c) : expandedCats.delete(c));
+      renderTable();
+    }
 
     async function loadProducts() {
       setStatus('loading', 'Loading products from sheet…');
@@ -733,16 +763,20 @@
       Object.keys(grouped).forEach(c => { if (!order.includes(c)) order.push(c); });
 
       catalog.innerHTML = order.map(cat => {
-        const items = grouped[cat] || [];
+        const items    = grouped[cat] || [];
+        const id       = safeCatId(cat);
+        const expanded = expandedCats.has(cat);
+        const escapedCat = cat.replace(/'/g, "\\'");
         return `
           <div class="cat-section">
-            <div class="cat-header">
+            <div class="cat-header" onclick="toggleCatAdmin('${escapedCat}')">
               <div class="cat-header-left">
+                <span class="cat-arrow" id="arrow_${id}">${expanded ? '▼' : '▶'}</span>
                 <span>${cat}</span>
                 <span class="cat-count">${items.length} product${items.length !== 1 ? 's' : ''}</span>
               </div>
             </div>
-            <div class="table-wrap" style="border-radius:0 0 8px 8px">
+            <div id="${id}" class="table-wrap" style="border-radius:0 0 8px 8px;${expanded ? '' : 'display:none'}">
               ${items.length === 0
                 ? `<p style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">No products in this category yet.</p>`
                 : `<table class="prod-table">

@@ -149,6 +149,7 @@ body {
 .product-table tbody tr.in-order:hover { background: #d0edde; }
 
 /* Category header rows */
+.product-table tbody tr.cat-row { cursor: pointer; user-select: none; }
 .product-table tbody tr.cat-row td {
   background: var(--navy);
   color: rgba(255,255,255,.88);
@@ -158,7 +159,8 @@ body {
   text-transform: uppercase;
   padding: 8px 14px;
 }
-.product-table tbody tr.cat-row:hover { background: none; }
+.product-table tbody tr.cat-row:hover td { background: var(--navy-lt); }
+.cat-row-arrow { margin-right: 6px; font-size: .65rem; opacity: .7; }
 
 /* Unavailable products */
 .product-table tbody tr.product-unavailable { opacity: .5; pointer-events: none; }

@@ -34,12 +34,25 @@ function profitPct(p) {
 }
 
 /* ============================================================
-   RENDER PRODUCT TABLE  (grouped by category)
+   RENDER PRODUCT TABLE  (grouped by category, collapsible)
    ============================================================ */
 const CATEGORY_ORDER = ['Beddings', 'Gift Novelties', 'Sports Attire (Women / Men)', 'Promotional Sales'];
+const expandedOrderCats = new Set();
+
+function toggleCatOrder(catTr) {
+  const cat      = catTr.dataset.cat;
+  const expanded = expandedOrderCats.has(cat);
+  expanded ? expandedOrderCats.delete(cat) : expandedOrderCats.add(cat);
+  const arrow = catTr.querySelector('.cat-row-arrow');
+  if (arrow) arrow.textContent = expanded ? '▶' : '▼';
+  let next = catTr.nextElementSibling;
+  while (next && !next.classList.contains('cat-row')) {
+    next.style.display = expanded ? 'none' : '';
+    next = next.nextElementSibling;
+  }
+}
 
 function renderProducts() {
-  // Group products by category
   const grouped = {};
   products.forEach(p => {
     const cat = p.category || 'Gift Novelties';
@@ -53,9 +66,15 @@ function renderProducts() {
   order.forEach(cat => {
     const catProducts = grouped[cat];
     if (!catProducts || catProducts.length === 0) return;
-    // Category header row
-    allRows.push(`<tr class="cat-row"><td colspan="7">${cat}</td></tr>`);
-    catProducts.forEach(p => allRows.push(makeProductRow(p)));
+    const expanded   = expandedOrderCats.has(cat);
+    const escapedCat = cat.replace(/"/g, '&quot;');
+    allRows.push(`<tr class="cat-row" onclick="toggleCatOrder(this)" data-cat="${escapedCat}">
+      <td colspan="7"><span class="cat-row-arrow">${expanded ? '▼' : '▶'}</span> ${cat}</td>
+    </tr>`);
+    catProducts.forEach(p => {
+      const row = makeProductRow(p);
+      allRows.push(expanded ? row : row.replace('<tr ', '<tr style="display:none" '));
+    });
   });
 
   document.getElementById('productBody').innerHTML = allRows.join('');
