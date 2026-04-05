@@ -304,6 +304,16 @@
       display: flex; justify-content: flex-end; gap: 10px;
       background: var(--bg); flex-shrink: 0;
     }
+
+    /* ── Unsaved changes banner ── */
+    #unsavedBanner {
+      display: none; align-items: center; gap: 10px;
+      background: #fffbeb; border: 1px solid #f6d860; border-radius: 6px;
+      padding: 10px 16px; margin-bottom: 16px;
+      font-size: .85rem; font-weight: 600; color: #92400e;
+    }
+    #unsavedBanner.show { display: flex; }
+    #unsavedBanner .banner-icon { font-size: 1rem; }
   </style>
 </head>
 <body>
@@ -352,10 +362,14 @@
             <button class="btn btn-secondary" onclick="expandCollapseAll(false)">Collapse All</button>
             <button class="btn btn-secondary" onclick="showNewCategoryPrompt()">+ New Category</button>
             <button class="btn btn-primary"   onclick="openProductModal(null)">+ Add Product</button>
-            <button class="btn btn-success"   onclick="saveProducts()">&#10003; Save to Sheet</button>
+            <button class="btn btn-secondary" id="btnSaveProducts" onclick="saveProducts()">&#10003; Save to Sheet</button>
           </div>
         </div>
         <div class="status-bar" id="statusBar"></div>
+        <div id="unsavedBanner">
+          <span class="banner-icon">⚠</span>
+          Changes not yet saved — click <strong>&nbsp;Save to Sheet&nbsp;</strong> to persist.
+        </div>
         <div id="productCatalog"></div>
       </div>
     </div>
@@ -693,6 +707,20 @@
     let editingIdx    = null;
     const expandedCats = new Set();
 
+    function markDirty() {
+      document.getElementById('unsavedBanner').classList.add('show');
+      const btn = document.getElementById('btnSaveProducts');
+      btn.classList.remove('btn-secondary');
+      btn.classList.add('btn-success');
+    }
+
+    function markClean() {
+      document.getElementById('unsavedBanner').classList.remove('show');
+      const btn = document.getElementById('btnSaveProducts');
+      btn.classList.remove('btn-success');
+      btn.classList.add('btn-secondary');
+    }
+
     function safeCatId(cat) { return 'cat_' + cat.replace(/[^a-z0-9]/gi, '_'); }
 
     function toggleCatAdmin(cat) {
@@ -741,6 +769,7 @@
         // Pick up any categories from the sheet not in our default list
         allProducts.forEach(p => { if (p.category && !allCategories.includes(p.category)) allCategories.push(p.category); });
         renderTable();
+        markClean();
         setStatus('success', data.length > 0
           ? `Loaded ${data.length} products.`
           : 'Sheet is empty — showing defaults. Save to populate the sheet.');
@@ -825,12 +854,14 @@
     function updateProductStatus(idx, status) {
       allProducts[idx].status   = status;
       allProducts[idx].available = status === 'available';
+      markDirty();
     }
 
     function deleteProduct(idx) {
       if (!confirm(`Delete "${allProducts[idx].name}"?`)) return;
       allProducts.splice(idx, 1);
       renderTable();
+      markDirty();
     }
 
     function showNewCategoryPrompt() {
@@ -919,6 +950,7 @@
       }
       closeModal();
       renderTable();
+      markDirty();
       toast(editingIdx !== null ? 'Product updated.' : 'Product added.', 'success');
     }
 
@@ -931,6 +963,7 @@
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status === 'ok') {
+          markClean();
           setStatus('success', `✓ ${data.saved} products saved to sheet.`);
           toast('Products saved!', 'success');
         } else throw new Error(data.message || 'Unknown error');
