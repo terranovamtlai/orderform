@@ -956,17 +956,28 @@
 
     async function saveProducts() {
       if (!allProducts.length) { toast('No products to save.', 'error'); return; }
-      const products = allProducts.map((p, i) => ({ ...p, id: i + 1 }));
-      setStatus('loading', 'Saving to sheet…');
+      const products  = allProducts.map((p, i) => ({ ...p, id: i + 1 }));
+      const chunkSize = 8;
+      const chunks    = [];
+      for (let i = 0; i < products.length; i += chunkSize) {
+        chunks.push(products.slice(i, i + chunkSize));
+      }
+      setStatus('loading', `Saving to sheet… (0 / ${products.length})`);
       try {
-        const url  = `${WEBHOOK}?action=saveProducts&payload=${encodeURIComponent(JSON.stringify(products))}`;
-        const res  = await fetch(url);
-        const data = await res.json();
-        if (data.status === 'ok') {
-          markClean();
-          setStatus('success', `✓ ${data.saved} products saved to sheet.`);
-          toast('Products saved!', 'success');
-        } else throw new Error(data.message || 'Unknown error');
+        let saved = 0;
+        for (let ci = 0; ci < chunks.length; ci++) {
+          const append  = ci > 0;
+          const payload = encodeURIComponent(JSON.stringify(chunks[ci]));
+          const url     = `${WEBHOOK}?action=saveProducts&append=${append}&payload=${payload}`;
+          const res     = await fetch(url);
+          const data    = await res.json();
+          if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
+          saved += data.saved;
+          setStatus('loading', `Saving to sheet… (${saved} / ${products.length})`);
+        }
+        markClean();
+        setStatus('success', `✓ ${saved} products saved to sheet.`);
+        toast('Products saved!', 'success');
       } catch (err) {
         setStatus('error', 'Save failed: ' + err.message);
         toast('Save failed.', 'error');

@@ -107,21 +107,23 @@ function handleGetProducts(e) {
   return json(products);
 }
 
-/* ── Products: write ─────────────────────────────────────── */
+/* ── Products: write (supports chunked saves via append=true) ── */
 function handleSaveProducts(e) {
-  const products = JSON.parse(e.parameter.payload);
-  const ss       = getSpreadsheet();
-  let   sheet    = ss.getSheetByName(PRODUCTS_SHEET);
+  var products = JSON.parse(e.parameter.payload);
+  var append   = e.parameter.append === 'true';
+  var ss       = getSpreadsheet();
+  var sheet    = ss.getSheetByName(PRODUCTS_SHEET);
 
-  if (!sheet) {
-    sheet = ss.insertSheet(PRODUCTS_SHEET);
+  if (!sheet) sheet = ss.insertSheet(PRODUCTS_SHEET);
+
+  if (!append) {
+    // First chunk: clear and write headers
+    sheet.clearContents();
+    var headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category'];
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+    sheet.setFrozenRows(1);
   }
-
-  sheet.clearContents();
-  const headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category'];
-  sheet.appendRow(headers);
-  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
-  sheet.setFrozenRows(1);
 
   products.forEach(function(p) {
     var status = p.status || (p.available !== false ? 'available' : 'unavailable');
