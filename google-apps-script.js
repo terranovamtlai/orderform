@@ -85,34 +85,8 @@ function handleGetProducts(e) {
       return obj;
     });
 
-  // Compute units already ordered per product (excluding cancelled orders)
-  const ordersSheet = ss.getSheetByName(ORDERS_SHEET);
-  const orderedMap  = {};
-  if (ordersSheet && ordersSheet.getLastRow() > 1) {
-    const oRows = ordersSheet.getDataRange().getValues();
-    // First pass: collect cancelled order IDs (TOTAL rows with col 16 = true)
-    var cancelled = {};
-    oRows.slice(1).forEach(function(r) {
-      var oid = String(r[1]);
-      if (oid.indexOf(' — TOTAL') !== -1 && r[15] === true) {
-        cancelled[oid.replace(' — TOTAL', '')] = true;
-      }
-    });
-    // Second pass: sum Total Units (col 8, index 7) per product name for non-cancelled
-    oRows.slice(1).forEach(function(r) {
-      var oid = String(r[1]);
-      if (oid.indexOf(' — TOTAL') === -1 && !cancelled[oid] && r[2] !== '') {
-        orderedMap[r[2]] = (orderedMap[r[2]] || 0) + Number(r[7]);
-      }
-    });
-  }
-
-  // Attach remaining stock and normalise status field
+  // Normalise status field
   products.forEach(function(p) {
-    var total = Number(p.totalInventory) || 0;
-    p.ordered   = orderedMap[p.name] || 0;
-    p.remaining = total > 0 ? Math.max(0, total - p.ordered) : null;
-    // normalise: old rows have available bool, new rows have status string
     if (!p.status) {
       p.status = (p.available !== false && p.available !== 'FALSE') ? 'available' : 'unavailable';
     }
@@ -144,7 +118,7 @@ function handleSaveProducts(e) {
   }
 
   sheet.clearContents();
-  const headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','totalInventory','status','vendorCodes'];
+  const headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes'];
   sheet.appendRow(headers);
   sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
   sheet.setFrozenRows(1);
@@ -155,7 +129,7 @@ function handleSaveProducts(e) {
       p.id, p.name, p.barcode, p.sku,
       Number(p.srp), Number(p.wholesale),
       p.img, p.orderUnit, Number(p.unitsPerOrder), p.unitLabel,
-      status === 'available', Number(p.totalInventory) || 0,
+      status === 'available',
       status,
       p.vendorCodes || '[]',
     ]);

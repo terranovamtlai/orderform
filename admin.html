@@ -253,7 +253,6 @@
 
     <nav class="tab-bar">
       <button class="tab-btn active" onclick="switchTab('products')">Products</button>
-      <button class="tab-btn"        onclick="switchTab('inventory')">Inventory Tracker</button>
       <button class="tab-btn"        onclick="switchTab('orders')">Orders</button>
       <button class="tab-btn"        onclick="switchTab('vendors')">Vendors</button>
     </nav>
@@ -283,38 +282,11 @@
                 <th>Order Unit</th>
                 <th>Units / Order</th>
                 <th>Unit Label</th>
+                <th>Status</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="productBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Inventory Tracker tab ── -->
-    <div class="tab-panel" id="tab-inventory">
-      <div class="admin-body">
-        <div class="toolbar">
-          <h2>Inventory Tracker</h2>
-          <div class="toolbar-actions">
-            <button class="btn btn-secondary" onclick="loadInventory()">&#8635; Refresh</button>
-            <button class="btn btn-success"   onclick="saveInventory()">&#10003; Save to Sheet</button>
-          </div>
-        </div>
-        <div class="status-bar" id="invStatusBar"></div>
-        <div class="table-wrap">
-          <table id="invTable">
-            <thead id="invHead">
-              <tr>
-                <th style="text-align:left">Product</th>
-                <th>Status</th>
-                <th>Total Inventory</th>
-                <th>Ordered</th>
-                <th>Remaining</th>
-              </tr>
-            </thead>
-            <tbody id="invBody"></tbody>
           </table>
         </div>
       </div>
@@ -451,7 +423,6 @@
       document.querySelector(`.tab-btn[onclick*="${name}"]`).classList.add('active');
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'orders')    loadOrders();
-      if (name === 'inventory') loadInventory();
       if (name === 'vendors')   loadVendors();
     }
 
@@ -571,11 +542,10 @@
         const products = (Array.isArray(data) && data.length > 0) ? data : DEFAULTS;
         renderTable(products.map(p => ({
           ...p,
-          srp:            Number(p.srp),
-          wholesale:      Number(p.wholesale),
-          unitsPerOrder:  Number(p.unitsPerOrder),
-          totalInventory: Number(p.totalInventory) || 0,
-          available:      p.available !== false && p.available !== 'false' && p.available !== 'FALSE',
+          srp:           Number(p.srp),
+          wholesale:     Number(p.wholesale),
+          unitsPerOrder: Number(p.unitsPerOrder),
+          available:     p.available !== false && p.available !== 'false' && p.available !== 'FALSE',
         })));
         setStatus('success', data.length > 0
           ? `Loaded ${data.length} products from sheet.`
@@ -616,15 +586,20 @@
         </td>
         <td><input type="number" class="f-unitsPerOrder" value="${p.unitsPerOrder}" min="1" step="1" /></td>
         <td><input type="text"   class="f-unitLabel"     value="${p.unitLabel}"     /></td>
+        <td>
+          <select class="f-status" onchange="this.closest('tr').dataset.status=this.value;this.closest('tr').dataset.available=String(this.value==='available')">
+            ${['available','unavailable','hidden'].map(s =>
+              `<option value="${s}"${(p.status||'available')===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+            ).join('')}
+          </select>
+        </td>
         <td class="col-del">
           <button class="btn-del" title="Remove" onclick="this.closest('tr').remove()">&#215;</button>
         </td>
       `;
-      // store hidden inventory fields on the row element for collectRows
-      tr.dataset.status         = p.status || (p.available !== false ? 'available' : 'unavailable');
-      tr.dataset.available      = p.available !== false ? 'true' : 'false';
-      tr.dataset.totalInventory = Number(p.totalInventory) || 0;
-      tr.dataset.vendorCodes    = typeof p.vendorCodes === 'string' ? p.vendorCodes : JSON.stringify(Array.isArray(p.vendorCodes) ? p.vendorCodes : []);
+      tr.dataset.status      = p.status || (p.available !== false ? 'available' : 'unavailable');
+      tr.dataset.available   = p.available !== false ? 'true' : 'false';
+      tr.dataset.vendorCodes = typeof p.vendorCodes === 'string' ? p.vendorCodes : JSON.stringify(Array.isArray(p.vendorCodes) ? p.vendorCodes : []);
       return tr;
     }
 
@@ -634,7 +609,7 @@
       const blank = { id: nextId++, name:'', barcode:'644197322967', sku:'687 0362',
                       srp:15.99, wholesale:11.90, img:'images/image1.png',
                       orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs',
-                      status: 'available', available: true, totalInventory: 0, vendorCodes: '[]' };
+                      status: 'available', available: true, vendorCodes: '[]' };
       tbody.appendChild(makeRow(blank, tbody.rows.length));
     }
 
@@ -650,10 +625,9 @@
         orderUnit:      tr.querySelector('.f-orderUnit').value,
         unitsPerOrder:  parseInt(tr.querySelector('.f-unitsPerOrder').value) || 1,
         unitLabel:      tr.querySelector('.f-unitLabel').value.trim(),
-        status:         tr.dataset.status || 'available',
-        available:      (tr.dataset.status || 'available') === 'available',
-        totalInventory: parseInt(tr.dataset.totalInventory) || 0,
-        vendorCodes:    tr.dataset.vendorCodes || '[]',
+        status:      tr.dataset.status || 'available',
+        available:   (tr.dataset.status || 'available') === 'available',
+        vendorCodes: tr.dataset.vendorCodes || '[]',
       })).filter(p => p.name);
     }
 
@@ -675,184 +649,6 @@
         setStatus('error', 'Save failed: ' + err.message);
         toast('Save failed.', 'error');
       }
-    }
-
-    /* ════════════════════════════════════════════════════════
-       INVENTORY TRACKER
-    ════════════════════════════════════════════════════════ */
-    let invProducts = [];  // current product list for the inventory tab
-    let invVendors  = [];  // vendors for per-vendor checkboxes
-
-    async function loadInventory() {
-      setInvStatus('loading', 'Loading inventory…');
-      try {
-        const [prodRes, ordersRes, vendorRes] = await Promise.all([
-          fetch(`${WEBHOOK}?action=getProducts`),
-          fetch(`${WEBHOOK}?action=getOrders`),
-          fetch(`${WEBHOOK}?action=getVendors`),
-        ]);
-        const prodData   = await prodRes.json();
-        const orderData  = await ordersRes.json();
-        invVendors = (await vendorRes.json()) || [];
-
-        invProducts = (Array.isArray(prodData) && prodData.length > 0 ? prodData : DEFAULTS)
-          .map(p => ({
-            ...p,
-            status:         p.status || (p.available !== false && p.available !== 'false' && p.available !== 'FALSE' ? 'available' : 'unavailable'),
-            totalInventory: Number(p.totalInventory) || 0,
-            vendorCodes:    (() => { try { return JSON.parse(p.vendorCodes || '[]'); } catch(e) { return []; } })(),
-          }));
-
-        // Sum ordered units per product name (non-cancelled)
-        const stats = {};
-        (Array.isArray(orderData) ? orderData : [])
-          .filter(o => !o.cancelled)
-          .forEach(o => o.lines.forEach(l => {
-            stats[l.name] = (stats[l.name] || 0) + Number(l.units);
-          }));
-
-        renderInvTable(invProducts, stats, invVendors);
-        setInvStatus('success', `${invProducts.length} products loaded.`);
-      } catch (err) {
-        setInvStatus('error', 'Could not load inventory: ' + err.message);
-      }
-    }
-
-    function renderInvTable(products, stats, vendors) {
-      // Dynamic thead — adds a column per vendor
-      const head = document.getElementById('invHead');
-      head.innerHTML = '<tr>'
-        + '<th style="text-align:left">Product</th>'
-        + '<th>Status</th>'
-        + '<th>Total Inventory</th>'
-        + '<th>Ordered</th>'
-        + '<th>Remaining</th>'
-        + vendors.map(v => '<th style="text-align:center;font-size:.75rem;white-space:nowrap">' + v.company + '</th>').join('')
-        + '</tr>';
-
-      const tbody = document.getElementById('invBody');
-      tbody.innerHTML = '';
-      products.forEach(p => {
-        const status    = p.status || 'available';
-        const total     = p.totalInventory;
-        const ordered   = stats[p.name] || 0;
-        const remaining = total - ordered;
-        const remClass  = total === 0 ? '' : remaining <= 0 ? 'out' : remaining <= total * 0.2 ? 'low' : 'ok';
-        const codes     = Array.isArray(p.vendorCodes) ? p.vendorCodes.map(c => c.toUpperCase()) : [];
-
-        const vendorCols = vendors.map(v => {
-          // Empty codes = available to all → all checked
-          const checked = codes.length === 0 || codes.indexOf(v.code.toUpperCase()) !== -1;
-          return '<td style="text-align:center"><input type="checkbox" class="v-check" data-vendor="' + v.code + '"' + (checked ? ' checked' : '') + ' /></td>';
-        }).join('');
-
-        const tr = document.createElement('tr');
-        tr.dataset.name = p.name;
-        if (status !== 'available') tr.classList.add('unavailable-row');
-        tr.innerHTML = `
-          <td style="font-weight:600">${p.name}</td>
-          <td style="text-align:center">
-            <select class="f-status" onchange="onStatusChange(this,'${p.name.replace(/'/g,"\\'")}')">
-              <option value="available"   ${status==='available'   ? 'selected' : ''}>Available</option>
-              <option value="unavailable" ${status==='unavailable' ? 'selected' : ''}>Unavailable</option>
-              <option value="hidden"      ${status==='hidden'      ? 'selected' : ''}>Hidden</option>
-            </select>
-          </td>
-          <td style="text-align:center">
-            <input type="number" class="inv-qty" value="${total}" min="0" step="1"
-                   style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.85rem;text-align:center"
-                   oninput="refreshRemaining(this,${ordered})" />
-          </td>
-          <td class="inv-stat">${ordered || '—'}</td>
-          <td class="inv-stat ${remClass}">${total === 0 ? '—' : remaining}</td>
-          ${vendorCols}
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function onStatusChange(sel, name) {
-      const status = sel.value;
-      sel.closest('tr').classList.toggle('unavailable-row', status !== 'available');
-      const p = invProducts.find(x => x.name === name);
-      if (p) p.status = status;
-      // sync back to product table hidden fields
-      document.querySelectorAll('#productBody tr').forEach(tr => {
-        if (tr.dataset.name === name) {
-          tr.dataset.status    = status;
-          tr.dataset.available = String(status === 'available');
-        }
-      });
-    }
-
-    function refreshRemaining(input, ordered) {
-      const total     = parseInt(input.value) || 0;
-      const remaining = total - ordered;
-      const tr        = input.closest('tr');
-      const statCells = tr.querySelectorAll('.inv-stat');
-      // last .inv-stat cell is always the Remaining column
-      const remCell   = statCells[statCells.length - 1];
-      if (remCell) {
-        remCell.textContent = total === 0 ? '—' : remaining;
-        remCell.className   = 'inv-stat ' + (total === 0 ? '' : remaining <= 0 ? 'out' : remaining <= total * 0.2 ? 'low' : 'ok');
-      }
-    }
-
-    async function saveInventory() {
-      // Collect current inventory rows and merge back into product data
-      const rows = Array.from(document.querySelectorAll('#invBody tr'));
-      const updates = {};
-      rows.forEach(tr => {
-        const name    = tr.dataset.name;
-        const status  = tr.querySelector('.f-status').value;
-        const total   = parseInt(tr.querySelector('.inv-qty').value) || 0;
-        const allBoxes     = Array.from(tr.querySelectorAll('.v-check'));
-        const checkedCodes = allBoxes.filter(cb => cb.checked).map(cb => cb.dataset.vendor);
-        // All checked = no restriction (empty array); otherwise store checked codes
-        const vendorCodes  = checkedCodes.length === allBoxes.length ? [] : checkedCodes;
-        updates[name] = { status, totalInventory: total, vendorCodes };
-      });
-
-      // Build full product list with updated inventory fields
-      const products = invProducts.map(p => ({
-        ...p,
-        status:         updates[p.name] ? updates[p.name].status         : (p.status || 'available'),
-        totalInventory: updates[p.name] ? updates[p.name].totalInventory : p.totalInventory,
-        available:      updates[p.name] ? updates[p.name].status === 'available' : p.status === 'available',
-        vendorCodes:    JSON.stringify(updates[p.name] ? updates[p.name].vendorCodes : (Array.isArray(p.vendorCodes) ? p.vendorCodes : [])),
-      }));
-
-      setInvStatus('loading', 'Saving inventory…');
-      try {
-        const url  = `${WEBHOOK}?action=saveProducts&payload=${encodeURIComponent(JSON.stringify(products))}`;
-        const res  = await fetch(url);
-        const data = await res.json();
-        if (data.status === 'ok') {
-          setInvStatus('success', '✓ Inventory saved to sheet.');
-          toast('Inventory saved!', 'success');
-          // sync hidden fields on product rows too
-          document.querySelectorAll('#productBody tr').forEach(tr => {
-            const u = updates[tr.dataset.name];
-            if (u) {
-              tr.dataset.status         = u.status;
-              tr.dataset.available      = String(u.status === 'available');
-              tr.dataset.totalInventory = u.totalInventory;
-              tr.dataset.vendorCodes    = JSON.stringify(u.vendorCodes);
-            }
-          });
-        } else {
-          throw new Error(data.message || 'Unknown error');
-        }
-      } catch (err) {
-        setInvStatus('error', 'Save failed: ' + err.message);
-        toast('Save failed.', 'error');
-      }
-    }
-
-    function setInvStatus(type, msg) {
-      const el = document.getElementById('invStatusBar');
-      el.className   = 'status-bar ' + type;
-      el.textContent = msg;
     }
 
     /* ════════════════════════════════════════════════════════
