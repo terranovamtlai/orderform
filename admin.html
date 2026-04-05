@@ -265,8 +265,8 @@
       box-shadow: 0 20px 60px rgba(0,0,0,.3);
       padding: 0; width: 620px; max-width: 95vw;
       max-height: 90vh; overflow: hidden;
-      display: flex; flex-direction: column;
     }
+    #productModal[open] { display: flex; flex-direction: column; }
     #productModal::backdrop { background: rgba(0,0,0,.5); }
     .modal-head {
       background: var(--navy); color: #fff; padding: 20px 24px;
@@ -493,10 +493,10 @@
           </select>
         </div>
       </div>
-      <!-- Vendor codes -->
+      <!-- Vendor visibility -->
       <div class="modal-field">
-        <label class="modal-label">Vendor Codes (comma-separated, leave blank for all)</label>
-        <input class="modal-input" id="m-vendorCodes" type="text" placeholder="ABC1, DEF2" />
+        <label class="modal-label">Visible to Vendors (all checked = visible to everyone)</label>
+        <div id="m-vendorList" style="display:flex;flex-wrap:wrap;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:#fff;min-height:42px;align-items:center"></div>
       </div>
     </div>
     <div class="modal-foot">
@@ -688,8 +688,13 @@
     async function loadProducts() {
       setStatus('loading', 'Loading products from sheet…');
       try {
-        const res  = await fetch(`${WEBHOOK}?action=getProducts`);
-        const data = await res.json();
+        const [prodRes, vendorRes] = await Promise.all([
+          fetch(`${WEBHOOK}?action=getProducts`),
+          fetch(`${WEBHOOK}?action=getVendors`),
+        ]);
+        const data   = await prodRes.json();
+        const vdata  = await vendorRes.json();
+        if (Array.isArray(vdata)) allVendors = vdata;
         const raw  = (Array.isArray(data) && data.length > 0) ? data : DEFAULTS;
         allProducts = raw.map((p, i) => ({
           ...p,
@@ -702,6 +707,7 @@
           category:      p.category || 'Gift Novelties',
           vendorCodes:   typeof p.vendorCodes === 'string' ? p.vendorCodes : JSON.stringify(Array.isArray(p.vendorCodes) ? p.vendorCodes : []),
         }));
+        allProducts = allProducts.filter(p => p.name);
         // Pick up any categories from the sheet not in our default list
         allProducts.forEach(p => { if (p.category && !allCategories.includes(p.category)) allCategories.push(p.category); });
         renderTable();
@@ -830,9 +836,17 @@
       const prev = document.getElementById('m-img-preview');
       prev.src = 'images/' + imgVal;
       prev.onerror = function() { this.src = 'images/image1.png'; };
-      let codes = [];
-      try { codes = JSON.parse(p.vendorCodes || '[]'); } catch(e) {}
-      document.getElementById('m-vendorCodes').value = codes.join(', ');
+      let selectedCodes = [];
+      try { selectedCodes = JSON.parse(p.vendorCodes || '[]').map(c => c.toUpperCase()); } catch(e) {}
+      const vendorList = document.getElementById('m-vendorList');
+      vendorList.innerHTML = allVendors.length === 0
+        ? '<span style="color:var(--muted);font-size:.82rem">No vendors yet — add them in the Vendors tab.</span>'
+        : allVendors.map(v => `
+            <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;cursor:pointer;white-space:nowrap">
+              <input type="checkbox" class="v-vendor-cb" value="${v.code}"
+                     ${selectedCodes.length === 0 || selectedCodes.includes(v.code.toUpperCase()) ? 'checked' : ''} />
+              ${v.company}
+            </label>`).join('');
       const sel = document.getElementById('m-category');
       sel.innerHTML = allCategories.map(c => `<option value="${c}"${c === (p.category || allCategories[0]) ? ' selected' : ''}>${c}</option>`).join('');
       document.getElementById('productModal').showModal();
@@ -844,8 +858,10 @@
       const name = document.getElementById('m-name').value.trim();
       if (!name) { alert('Product name is required.'); return; }
       const imgRaw   = document.getElementById('m-img').value.trim().replace(/^images\//, '') || 'image1.png';
-      const codesRaw = document.getElementById('m-vendorCodes').value.trim();
-      const codes    = codesRaw ? codesRaw.split(/[,\s]+/).map(c => c.trim().toUpperCase()).filter(Boolean) : [];
+      const allBoxes     = Array.from(document.querySelectorAll('.v-vendor-cb'));
+      const checkedCodes = allBoxes.filter(cb => cb.checked).map(cb => cb.value.toUpperCase());
+      // All checked (or no vendors) = visible to everyone → store empty array
+      const codes = (allBoxes.length === 0 || checkedCodes.length === allBoxes.length) ? [] : checkedCodes;
       const status   = document.getElementById('m-status').value;
       const prod = {
         name,
