@@ -1,0 +1,14 @@
+id,name,barcode,sku,srp,wholesale,img,orderUnit,unitsPerOrder,unitLabel,available,status,vendorCodes,category
+101,Blue Pineapples Reversible Quilt Set D/Q,688466131409,60479.3DQ.03,34.99,17.76,bed_blue_pineapples.png,carton,4,sets,TRUE,available,[],Beddings
+102,Blue Pineapples Reversible Quilt Set King,688466131454,60480.3K.03,34.99,17.76,bed_blue_pineapples.png,carton,4,sets,TRUE,available,[],Beddings
+103,Paddles Reversible Quilt Set D/Q,688466131416,60479.3DQ.04,34.99,17.76,bed_paddles.png,carton,4,sets,FALSE,unavailable,[],Beddings
+104,Paddles Reversible Quilt Set King,688466131461,60480.3K.04,34.99,17.76,bed_paddles.png,carton,4,sets,TRUE,available,[],Beddings
+105,Grey Pineapples Reversible Quilt Set D/Q,688466131423,60479.3DQ.05,34.99,17.76,bed_grey_pineapples.png,carton,4,sets,TRUE,available,[],Beddings
+106,Grey Pineapples Reversible Quilt Set King,688466131478,60480.3K.05,34.99,17.76,bed_grey_pineapples.png,carton,4,sets,TRUE,available,[],Beddings
+107,Quilt 3PC Set DQ Lisbon,688466066992,60113.3DQ.50,39.95,22.14,bed_lisbon.png,set,1,sets,TRUE,available,[],Beddings
+108,Quilt 3PC Set DQ Cyprus,688466009753,60113.3DQ.37,39.95,22.14,bed_cyprus.png,set,1,sets,TRUE,available,[],Beddings
+109,Quilt 3PC Set DQ Botanix,688466033680,60113.3DQ.39,39.95,22.14,bed_botanix.png,set,1,sets,TRUE,available,[],Beddings
+110,Quilt 3PC Set DQ Tivoli,688466057501,60113.3DQ.46,39.95,22.14,bed_tivoli.png,set,1,sets,TRUE,available,[],Beddings
+111,Quilt 3PC Set Duncan King Navy,060971503139,60503.3K.13,,21.09,bed_duncan_king_navy.png,set,1,sets,TRUE,available,[],Beddings
+112,Printed Comforter Set 2PC Twin Reversible,688466203441,58074.2T.A,32.99,22.14,bed_printed_comforter.jpg,case,6,sets,TRUE,available,[],Beddings
+113,Printed Comforter Set 3PC Queen Reversible,688466203458,58075.3DQ.A,34.99,23.25,bed_printed_comforter.jpg,case,6,sets,TRUE,available,[],Beddings
