@@ -220,6 +220,85 @@
     .detail-inner tbody tr:hover { background: transparent; }
     .show-cancelled-wrap { font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
     .show-cancelled-wrap input { width: auto; }
+
+    /* ── Category sections (Products tab) ── */
+    .cat-section { margin-bottom: 28px; }
+    .cat-header {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--navy); color: #fff;
+      padding: 10px 16px; border-radius: 8px 8px 0 0;
+      font-size: .88rem; font-weight: 600;
+    }
+    .cat-header-left { display: flex; align-items: center; gap: 10px; }
+    .cat-count {
+      background: rgba(255,255,255,.2); border-radius: 10px;
+      padding: 2px 8px; font-size: .72rem; font-weight: 600;
+    }
+    .prod-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .prod-table thead th {
+      background: #f7f9fc; color: var(--muted); padding: 8px 12px;
+      text-align: left; font-size: .71rem; text-transform: uppercase;
+      letter-spacing: .06em; font-weight: 600; white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .prod-table tbody tr { border-bottom: 1px solid var(--border); }
+    .prod-table tbody tr:last-child { border-bottom: none; }
+    .prod-table tbody tr:hover { background: #f7f9fc; }
+    .prod-table td { padding: 10px 12px; vertical-align: middle; }
+    .prod-thumb {
+      width: 44px; height: 44px; object-fit: contain;
+      border-radius: 6px; background: #f8f8f8;
+      border: 1px solid var(--border); display: block;
+    }
+    .prod-name { font-weight: 600; color: var(--text); }
+    .prod-meta { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+    .prod-price strong { color: var(--navy); }
+    .prod-price small  { color: var(--muted); font-size: .75rem; }
+    .prod-status-select {
+      padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px;
+      font-size: .78rem; font-weight: 600; cursor: pointer; background: #fff;
+    }
+
+    /* ── Product modal ── */
+    #productModal {
+      border: none; border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      padding: 0; width: 620px; max-width: 95vw;
+      max-height: 90vh; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    #productModal::backdrop { background: rgba(0,0,0,.5); }
+    .modal-head {
+      background: var(--navy); color: #fff; padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .modal-head h3 { font-size: 1rem; font-weight: 600; }
+    .modal-close {
+      background: none; border: none; color: rgba(255,255,255,.7);
+      font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0 4px;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 18px; }
+    .modal-img-row { display: flex; align-items: center; gap: 16px; }
+    .modal-img-preview {
+      width: 80px; height: 80px; object-fit: contain;
+      border-radius: 8px; border: 1px solid var(--border); background: #f8f8f8; flex-shrink: 0;
+    }
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .modal-field { display: flex; flex-direction: column; gap: 5px; }
+    .modal-field.full { grid-column: 1 / -1; }
+    .modal-label { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .modal-input {
+      padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px;
+      font-size: .9rem; color: var(--text); outline: none;
+      font-family: inherit; background: #fff; width: 100%;
+    }
+    .modal-input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,58,95,.1); }
+    .modal-foot {
+      padding: 14px 24px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 10px;
+      background: var(--bg); flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -263,32 +342,14 @@
         <div class="toolbar">
           <h2>Products</h2>
           <div class="toolbar-actions">
-            <button class="btn btn-secondary" onclick="loadProducts()">&#8635; Refresh from Sheet</button>
-            <button class="btn btn-primary"   onclick="addRow()">+ Add Product</button>
+            <button class="btn btn-secondary" onclick="loadProducts()">&#8635; Refresh</button>
+            <button class="btn btn-secondary" onclick="showNewCategoryPrompt()">+ New Category</button>
+            <button class="btn btn-primary"   onclick="openProductModal(null)">+ Add Product</button>
             <button class="btn btn-success"   onclick="saveProducts()">&#10003; Save to Sheet</button>
           </div>
         </div>
         <div class="status-bar" id="statusBar"></div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Name</th>
-                <th>Barcode</th>
-                <th>SKU</th>
-                <th>SRP / unit</th>
-                <th>Wholesale / unit</th>
-                <th>Order Unit</th>
-                <th>Units / Order</th>
-                <th>Unit Label</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="productBody"></tbody>
-          </table>
-        </div>
+        <div id="productCatalog"></div>
       </div>
     </div>
 
@@ -358,6 +419,92 @@
 
   </div>
 
+  <!-- ── Product modal ── -->
+  <dialog id="productModal">
+    <div class="modal-head">
+      <h3 id="modalTitle">New Product</h3>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Image -->
+      <div class="modal-img-row">
+        <img class="modal-img-preview" id="m-img-preview" src="images/image1.png" alt="" />
+        <div class="modal-field" style="flex:1">
+          <label class="modal-label">Image filename</label>
+          <input class="modal-input" id="m-img" type="text" placeholder="image1.png"
+                 oninput="document.getElementById('m-img-preview').src='images/'+this.value" />
+        </div>
+      </div>
+      <!-- Name + Category -->
+      <div class="modal-grid">
+        <div class="modal-field full">
+          <label class="modal-label">Product Name</label>
+          <input class="modal-input" id="m-name" type="text" placeholder="e.g. Bacon Socks" />
+        </div>
+        <div class="modal-field full">
+          <label class="modal-label">Category</label>
+          <select class="modal-input" id="m-category"></select>
+        </div>
+      </div>
+      <!-- Barcode / SKU -->
+      <div class="modal-grid">
+        <div class="modal-field">
+          <label class="modal-label">Barcode</label>
+          <input class="modal-input" id="m-barcode" type="text" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">SKU</label>
+          <input class="modal-input" id="m-sku" type="text" />
+        </div>
+      </div>
+      <!-- Pricing -->
+      <div class="modal-grid">
+        <div class="modal-field">
+          <label class="modal-label">SRP (per unit, $)</label>
+          <input class="modal-input" id="m-srp" type="number" step="0.01" min="0" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Wholesale (per unit, $)</label>
+          <input class="modal-input" id="m-wholesale" type="number" step="0.01" min="0" />
+        </div>
+      </div>
+      <!-- Order unit -->
+      <div class="modal-grid">
+        <div class="modal-field">
+          <label class="modal-label">Order Unit</label>
+          <select class="modal-input" id="m-orderUnit">
+            <option>display</option><option>case</option><option>pack</option><option>box</option><option>unit</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Units per Order</label>
+          <input class="modal-input" id="m-unitsPerOrder" type="number" min="1" step="1" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Unit Label</label>
+          <input class="modal-input" id="m-unitLabel" type="text" placeholder="pairs" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Status</label>
+          <select class="modal-input" id="m-status">
+            <option value="available">Available</option>
+            <option value="unavailable">Unavailable</option>
+            <option value="hidden">Hidden</option>
+          </select>
+        </div>
+      </div>
+      <!-- Vendor codes -->
+      <div class="modal-field">
+        <label class="modal-label">Vendor Codes (comma-separated, leave blank for all)</label>
+        <input class="modal-input" id="m-vendorCodes" type="text" placeholder="ABC1, DEF2" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-success"   onclick="saveModal()">&#10003; Save Product</button>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast"></div>
 
   <script>
@@ -366,13 +513,13 @@
     const SESSION_KEY = 'tn_admin_auth';
 
     const DEFAULTS = [
-      { id:1, name:'Bacon Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image2.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
-      { id:2, name:'Ramen Instant Socks',             barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image3.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
-      { id:3, name:'Beef Jerky Socks',                barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image4.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
-      { id:4, name:'Greatest Hits Vinyl Record Socks',barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image7.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
-      { id:5, name:'Burger Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image8.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
-      { id:6, name:'Pickles Socks',                   barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image9.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
-      { id:7, name:'Socks With Hops',                 barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'images/image11.png', orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs' },
+      { id:1, name:'Bacon Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image2.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:2, name:'Ramen Instant Socks',             barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image3.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:3, name:'Beef Jerky Socks',                barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image4.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:4, name:'Greatest Hits Vinyl Record Socks',barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image7.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:5, name:'Burger Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image8.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:6, name:'Pickles Socks',                   barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image9.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:7, name:'Socks With Hops',                 barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image11.png', orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
     ];
 
     /* ── Date formatter ── */
@@ -534,106 +681,200 @@
     /* ════════════════════════════════════════════════════════
        PRODUCTS
     ════════════════════════════════════════════════════════ */
+    let allProducts  = [];
+    let allCategories = ['Beddings', 'Gift Novelties', 'Sports Attire (Women / Men)', 'Promotional Sales'];
+    let editingIdx   = null;
+
     async function loadProducts() {
       setStatus('loading', 'Loading products from sheet…');
       try {
         const res  = await fetch(`${WEBHOOK}?action=getProducts`);
         const data = await res.json();
-        const products = (Array.isArray(data) && data.length > 0) ? data : DEFAULTS;
-        renderTable(products.map(p => ({
+        const raw  = (Array.isArray(data) && data.length > 0) ? data : DEFAULTS;
+        allProducts = raw.map((p, i) => ({
           ...p,
+          id:            i + 1,
           srp:           Number(p.srp),
           wholesale:     Number(p.wholesale),
           unitsPerOrder: Number(p.unitsPerOrder),
           available:     p.available !== false && p.available !== 'false' && p.available !== 'FALSE',
-        })));
+          status:        p.status || 'available',
+          category:      p.category || 'Gift Novelties',
+          vendorCodes:   typeof p.vendorCodes === 'string' ? p.vendorCodes : JSON.stringify(Array.isArray(p.vendorCodes) ? p.vendorCodes : []),
+        }));
+        // Pick up any categories from the sheet not in our default list
+        allProducts.forEach(p => { if (p.category && !allCategories.includes(p.category)) allCategories.push(p.category); });
+        renderTable();
         setStatus('success', data.length > 0
-          ? `Loaded ${data.length} products from sheet.`
+          ? `Loaded ${data.length} products.`
           : 'Sheet is empty — showing defaults. Save to populate the sheet.');
       } catch (err) {
-        renderTable(DEFAULTS);
+        allProducts = DEFAULTS.map((p, i) => ({ ...p, id: i + 1 }));
+        renderTable();
         setStatus('error', 'Could not reach sheet — showing defaults. ' + err.message);
       }
     }
 
-    function renderTable(products) {
-      const tbody = document.getElementById('productBody');
-      tbody.innerHTML = '';
-      products.forEach((p, i) => tbody.appendChild(makeRow(p, i)));
+    function renderTable() {
+      const catalog = document.getElementById('productCatalog');
+      const grouped = {};
+      allProducts.forEach((p, i) => {
+        const cat = p.category || 'Gift Novelties';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push({ p, i });
+      });
+      const order = [...allCategories];
+      Object.keys(grouped).forEach(c => { if (!order.includes(c)) order.push(c); });
+
+      catalog.innerHTML = order.map(cat => {
+        const items = grouped[cat] || [];
+        return `
+          <div class="cat-section">
+            <div class="cat-header">
+              <div class="cat-header-left">
+                <span>${cat}</span>
+                <span class="cat-count">${items.length} product${items.length !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+            <div class="table-wrap" style="border-radius:0 0 8px 8px">
+              ${items.length === 0
+                ? `<p style="padding:20px;text-align:center;color:var(--muted);font-size:.85rem">No products in this category yet.</p>`
+                : `<table class="prod-table">
+                    <thead><tr>
+                      <th style="width:56px"></th>
+                      <th>Name</th>
+                      <th>SKU</th>
+                      <th>SRP / Wholesale</th>
+                      <th>Order Unit</th>
+                      <th>Status</th>
+                      <th style="width:110px"></th>
+                    </tr></thead>
+                    <tbody>
+                      ${items.map(({ p, i }) => `
+                        <tr>
+                          <td><img class="prod-thumb" src="images/${p.img.replace(/^images\//, '')}" onerror="this.src='images/image1.png'" /></td>
+                          <td>
+                            <div class="prod-name">${p.name}</div>
+                            <div class="prod-meta">${p.barcode}</div>
+                          </td>
+                          <td><code style="font-size:.78rem">${p.sku}</code></td>
+                          <td class="prod-price">
+                            <strong>$${Number(p.srp).toFixed(2)}</strong>
+                            <small>&nbsp;/&nbsp;$${Number(p.wholesale).toFixed(2)}</small>
+                          </td>
+                          <td><span style="font-size:.8rem">${p.orderUnit} of ${p.unitsPerOrder} ${p.unitLabel}</span></td>
+                          <td>
+                            <select class="prod-status-select" onchange="updateProductStatus(${i}, this.value)">
+                              ${['available','unavailable','hidden'].map(s =>
+                                `<option value="${s}"${p.status===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+                              ).join('')}
+                            </select>
+                          </td>
+                          <td style="text-align:right;white-space:nowrap">
+                            <button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="openProductModal(${i})">Edit</button>
+                            <button class="btn-del" onclick="deleteProduct(${i})">&#215;</button>
+                          </td>
+                        </tr>`).join('')}
+                    </tbody>
+                  </table>`}
+            </div>
+          </div>`;
+      }).join('');
     }
 
-    function makeRow(p, idx) {
-      const tr = document.createElement('tr');
-      tr.dataset.idx  = idx;
-      tr.dataset.name = p.name;
-      tr.innerHTML = `
-        <td class="col-img">
-          <img src="images/${p.img.replace(/^images\//,'')}" alt="" onerror="this.src='images/image1.png'" />
-          <input type="text" class="f-img" value="${p.img.replace(/^images\//,'')}" placeholder="image1.png"
-                 oninput="this.closest('tr').querySelector('img').src='images/'+this.value" />
-        </td>
-        <td><input type="text"   class="f-name"          value="${p.name}"          /></td>
-        <td><input type="text"   class="f-barcode"       value="${p.barcode}"       /></td>
-        <td><input type="text"   class="f-sku"           value="${p.sku}"           /></td>
-        <td><input type="number" class="f-srp"           value="${p.srp}"           step="0.01" min="0" /></td>
-        <td><input type="number" class="f-wholesale"     value="${p.wholesale}"     step="0.01" min="0" /></td>
-        <td>
-          <select class="f-orderUnit">
-            ${['display','case','pack','box','unit'].map(u =>
-              `<option${p.orderUnit===u?' selected':''}>${u}</option>`
-            ).join('')}
-          </select>
-        </td>
-        <td><input type="number" class="f-unitsPerOrder" value="${p.unitsPerOrder}" min="1" step="1" /></td>
-        <td><input type="text"   class="f-unitLabel"     value="${p.unitLabel}"     /></td>
-        <td>
-          <select class="f-status" onchange="this.closest('tr').dataset.status=this.value;this.closest('tr').dataset.available=String(this.value==='available')">
-            ${['available','unavailable','hidden'].map(s =>
-              `<option value="${s}"${(p.status||'available')===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
-            ).join('')}
-          </select>
-        </td>
-        <td class="col-del">
-          <button class="btn-del" title="Remove" onclick="this.closest('tr').remove()">&#215;</button>
-        </td>
-      `;
-      tr.dataset.status      = p.status || (p.available !== false ? 'available' : 'unavailable');
-      tr.dataset.available   = p.available !== false ? 'true' : 'false';
-      tr.dataset.vendorCodes = typeof p.vendorCodes === 'string' ? p.vendorCodes : JSON.stringify(Array.isArray(p.vendorCodes) ? p.vendorCodes : []);
-      return tr;
+    function updateProductStatus(idx, status) {
+      allProducts[idx].status   = status;
+      allProducts[idx].available = status === 'available';
     }
 
-    let nextId = 100;
-    function addRow() {
-      const tbody = document.getElementById('productBody');
-      const blank = { id: nextId++, name:'', barcode:'644197322967', sku:'687 0362',
-                      srp:15.99, wholesale:11.90, img:'images/image1.png',
-                      orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs',
-                      status: 'available', available: true, vendorCodes: '[]' };
-      tbody.appendChild(makeRow(blank, tbody.rows.length));
+    function deleteProduct(idx) {
+      if (!confirm(`Delete "${allProducts[idx].name}"?`)) return;
+      allProducts.splice(idx, 1);
+      renderTable();
     }
 
-    function collectRows() {
-      return Array.from(document.querySelectorAll('#productBody tr')).map((tr, i) => ({
-        id:             i + 1,
-        name:           tr.querySelector('.f-name').value.trim(),
-        barcode:        tr.querySelector('.f-barcode').value.trim(),
-        sku:            tr.querySelector('.f-sku').value.trim(),
-        srp:            parseFloat(tr.querySelector('.f-srp').value) || 0,
-        wholesale:      parseFloat(tr.querySelector('.f-wholesale').value) || 0,
-        img:            tr.querySelector('.f-img').value.trim().replace(/^images\//, ''),
-        orderUnit:      tr.querySelector('.f-orderUnit').value,
-        unitsPerOrder:  parseInt(tr.querySelector('.f-unitsPerOrder').value) || 1,
-        unitLabel:      tr.querySelector('.f-unitLabel').value.trim(),
-        status:      tr.dataset.status || 'available',
-        available:   (tr.dataset.status || 'available') === 'available',
-        vendorCodes: tr.dataset.vendorCodes || '[]',
-      })).filter(p => p.name);
+    function showNewCategoryPrompt() {
+      const name = prompt('New category name:');
+      if (!name || !name.trim()) return;
+      const cat = name.trim();
+      if (!allCategories.includes(cat)) {
+        allCategories.push(cat);
+        renderTable();
+        toast('Category "' + cat + '" added.', 'success');
+      } else {
+        toast('That category already exists.', 'error');
+      }
+    }
+
+    /* ── Product modal ── */
+    function openProductModal(idx) {
+      editingIdx = idx;
+      const p = idx !== null ? allProducts[idx] : {
+        name:'', barcode:'', sku:'', srp:'', wholesale:'',
+        img:'image1.png', orderUnit:'display', unitsPerOrder:6,
+        unitLabel:'pairs', status:'available',
+        category: allCategories[0] || 'Gift Novelties', vendorCodes:'[]',
+      };
+      document.getElementById('modalTitle').textContent     = idx !== null ? 'Edit Product' : 'New Product';
+      document.getElementById('m-name').value               = p.name           || '';
+      document.getElementById('m-barcode').value            = p.barcode        || '';
+      document.getElementById('m-sku').value                = p.sku            || '';
+      document.getElementById('m-srp').value                = p.srp            || '';
+      document.getElementById('m-wholesale').value          = p.wholesale      || '';
+      document.getElementById('m-orderUnit').value          = p.orderUnit      || 'display';
+      document.getElementById('m-unitsPerOrder').value      = p.unitsPerOrder  || 6;
+      document.getElementById('m-unitLabel').value          = p.unitLabel      || 'pairs';
+      document.getElementById('m-status').value             = p.status         || 'available';
+      const imgVal = (p.img || 'image1.png').replace(/^images\//, '');
+      document.getElementById('m-img').value                = imgVal;
+      const prev = document.getElementById('m-img-preview');
+      prev.src = 'images/' + imgVal;
+      prev.onerror = function() { this.src = 'images/image1.png'; };
+      let codes = [];
+      try { codes = JSON.parse(p.vendorCodes || '[]'); } catch(e) {}
+      document.getElementById('m-vendorCodes').value = codes.join(', ');
+      const sel = document.getElementById('m-category');
+      sel.innerHTML = allCategories.map(c => `<option value="${c}"${c === (p.category || allCategories[0]) ? ' selected' : ''}>${c}</option>`).join('');
+      document.getElementById('productModal').showModal();
+    }
+
+    function closeModal() { document.getElementById('productModal').close(); }
+
+    function saveModal() {
+      const name = document.getElementById('m-name').value.trim();
+      if (!name) { alert('Product name is required.'); return; }
+      const imgRaw   = document.getElementById('m-img').value.trim().replace(/^images\//, '') || 'image1.png';
+      const codesRaw = document.getElementById('m-vendorCodes').value.trim();
+      const codes    = codesRaw ? codesRaw.split(/[,\s]+/).map(c => c.trim().toUpperCase()).filter(Boolean) : [];
+      const status   = document.getElementById('m-status').value;
+      const prod = {
+        name,
+        barcode:       document.getElementById('m-barcode').value.trim(),
+        sku:           document.getElementById('m-sku').value.trim(),
+        srp:           parseFloat(document.getElementById('m-srp').value) || 0,
+        wholesale:     parseFloat(document.getElementById('m-wholesale').value) || 0,
+        img:           imgRaw,
+        orderUnit:     document.getElementById('m-orderUnit').value,
+        unitsPerOrder: parseInt(document.getElementById('m-unitsPerOrder').value) || 1,
+        unitLabel:     document.getElementById('m-unitLabel').value.trim(),
+        status,
+        available:     status === 'available',
+        category:      document.getElementById('m-category').value,
+        vendorCodes:   JSON.stringify(codes),
+      };
+      if (editingIdx !== null) {
+        allProducts[editingIdx] = { ...allProducts[editingIdx], ...prod };
+      } else {
+        allProducts.push({ id: allProducts.length + 1, ...prod });
+      }
+      closeModal();
+      renderTable();
+      toast(editingIdx !== null ? 'Product updated.' : 'Product added.', 'success');
     }
 
     async function saveProducts() {
-      const products = collectRows();
-      if (!products.length) { toast('No products to save.', 'error'); return; }
+      if (!allProducts.length) { toast('No products to save.', 'error'); return; }
+      const products = allProducts.map((p, i) => ({ ...p, id: i + 1 }));
       setStatus('loading', 'Saving to sheet…');
       try {
         const url  = `${WEBHOOK}?action=saveProducts&payload=${encodeURIComponent(JSON.stringify(products))}`;
@@ -642,9 +883,7 @@
         if (data.status === 'ok') {
           setStatus('success', `✓ ${data.saved} products saved to sheet.`);
           toast('Products saved!', 'success');
-        } else {
-          throw new Error(data.message || 'Unknown error');
-        }
+        } else throw new Error(data.message || 'Unknown error');
       } catch (err) {
         setStatus('error', 'Save failed: ' + err.message);
         toast('Save failed.', 'error');

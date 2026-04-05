@@ -148,6 +148,18 @@ body {
 .product-table tbody tr.in-order { background: var(--green-lt); }
 .product-table tbody tr.in-order:hover { background: #d0edde; }
 
+/* Category header rows */
+.product-table tbody tr.cat-row td {
+  background: var(--navy);
+  color: rgba(255,255,255,.88);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+}
+.product-table tbody tr.cat-row:hover { background: none; }
+
 /* Unavailable products */
 .product-table tbody tr.product-unavailable { opacity: .5; pointer-events: none; }
 .product-table tbody tr.product-unavailable:hover { background: none; }

@@ -34,10 +34,34 @@ function profitPct(p) {
 }
 
 /* ============================================================
-   RENDER PRODUCT TABLE
+   RENDER PRODUCT TABLE  (grouped by category)
    ============================================================ */
+const CATEGORY_ORDER = ['Beddings', 'Gift Novelties', 'Sports Attire (Women / Men)', 'Promotional Sales'];
+
 function renderProducts() {
-  const rows = products.map(p => {
+  // Group products by category
+  const grouped = {};
+  products.forEach(p => {
+    const cat = p.category || 'Gift Novelties';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(p);
+  });
+  const order = [...CATEGORY_ORDER];
+  Object.keys(grouped).forEach(c => { if (!order.includes(c)) order.push(c); });
+
+  const allRows = [];
+  order.forEach(cat => {
+    const catProducts = grouped[cat];
+    if (!catProducts || catProducts.length === 0) return;
+    // Category header row
+    allRows.push(`<tr class="cat-row"><td colspan="7">${cat}</td></tr>`);
+    catProducts.forEach(p => allRows.push(makeProductRow(p)));
+  });
+
+  document.getElementById('productBody').innerHTML = allRows.join('');
+}
+
+function makeProductRow(p) {
     const avail = !(p.available === false || p.available === 'false' || p.available === 'FALSE');
 
     return `
@@ -71,9 +95,6 @@ function renderProducts() {
       </td>
     </tr>
   `;
-  }).join('');
-
-  document.getElementById('productBody').innerHTML = rows;
 }
 
 /* ============================================================
@@ -549,7 +570,7 @@ async function init() {
         wholesale:     Number(p.wholesale),
         unitsPerOrder: Number(p.unitsPerOrder),
         available:     p.available !== false && p.available !== 'false' && p.available !== 'FALSE',
-        remaining:     p.remaining === null || p.remaining === undefined ? null : Number(p.remaining),
+        category:      p.category || 'Gift Novelties',
       }));
     } else {
       showCatalogueError('No products found in the sheet. Please add products via the Admin page.');

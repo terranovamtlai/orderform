@@ -118,7 +118,7 @@ function handleSaveProducts(e) {
   }
 
   sheet.clearContents();
-  const headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes'];
+  const headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category'];
   sheet.appendRow(headers);
   sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
   sheet.setFrozenRows(1);
@@ -132,6 +132,7 @@ function handleSaveProducts(e) {
       status === 'available',
       status,
       p.vendorCodes || '[]',
+      p.category || 'Gift Novelties',
     ]);
   });
 
