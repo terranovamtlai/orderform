@@ -63,11 +63,15 @@ function renderProducts() {
   Object.keys(grouped).forEach(c => { if (!order.includes(c)) order.push(c); });
 
   const allRows = [];
+  let first = true;
   order.forEach(cat => {
     const catProducts = grouped[cat];
     if (!catProducts || catProducts.length === 0) return;
     const expanded   = expandedOrderCats.has(cat);
     const escapedCat = cat.replace(/"/g, '&quot;');
+    // Spacer before every category (including the first, to gap from the header)
+    allRows.push(`<tr class="cat-spacer${first ? ' cat-spacer-first' : ''}"><td colspan="7"></td></tr>`);
+    first = false;
     allRows.push(`<tr class="cat-row" onclick="toggleCatOrder(this)" data-cat="${escapedCat}">
       <td colspan="7"><span class="cat-row-arrow">${expanded ? '▼' : '▶'}</span> ${cat}</td>
     </tr>`);

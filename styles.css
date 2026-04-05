@@ -148,6 +148,15 @@ body {
 .product-table tbody tr.in-order { background: var(--green-lt); }
 .product-table tbody tr.in-order:hover { background: #d0edde; }
 
+/* Category spacer rows */
+.product-table tbody tr.cat-spacer td {
+  height: 20px;
+  background: var(--bg);
+  padding: 0;
+  border: none;
+}
+.product-table tbody tr.cat-spacer:hover { background: none; }
+
 /* Category header rows */
 .product-table tbody tr.cat-row { cursor: pointer; user-select: none; }
 .product-table tbody tr.cat-row td {
