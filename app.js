@@ -46,7 +46,7 @@ function toggleCatOrder(catTr) {
   const arrow = catTr.querySelector('.cat-row-arrow');
   if (arrow) arrow.textContent = expanded ? '▶' : '▼';
   let next = catTr.nextElementSibling;
-  while (next && !next.classList.contains('cat-row')) {
+  while (next && !next.classList.contains('cat-row') && !next.classList.contains('cat-spacer')) {
     next.style.display = expanded ? 'none' : '';
     next = next.nextElementSibling;
   }
