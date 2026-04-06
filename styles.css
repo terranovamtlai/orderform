@@ -443,18 +443,28 @@ body {
 .dialog-success {
   background: var(--green-lt);
   border-bottom: 1px solid #a7e3c2;
-  padding: 12px 20px;
-  font-size: .875rem;
+  padding: 28px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.success-order-id {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: .03em;
+}
+.success-received {
+  font-size: 1rem;
   font-weight: 600;
   color: var(--green);
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
-.success-icon {
-  font-size: 1.1rem;
-  font-weight: 700;
-  flex-shrink: 0;
+.success-thankyou {
+  font-size: .875rem;
+  color: var(--text);
+  opacity: .8;
 }
 
 .dialog-body {

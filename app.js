@@ -376,12 +376,13 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
   // Switch dialog to Confirmed state
   document.getElementById('dialogTitle').textContent = submitError ? 'Submission Problem' : 'Order Submitted';
   successEl.innerHTML = submitError
-    ? '<span style="color:#c0392b">&#9888; Your order could not be recorded. Please email your order directly to Terra Nova.</span>'
-    : '<span class="success-icon">&#10003;</span>'
-      + ' Order <strong style="white-space:nowrap">' + orderId + '</strong>'
-      + '<br>We have now received your order and will contact you shortly to process.'
-      + (vendor && vendor.email ? '<br>A confirmation has been sent to <strong>' + vendor.email + '</strong>.' : '')
-      + '<br>Thank you for your business. &nbsp;—&nbsp; Terra Nova';
+    ? '<span style="color:#c0392b;font-size:1rem;font-weight:600">&#9888; Your order could not be recorded. Please email your order directly to Terra Nova.</span>'
+    : '<div class="success-order-id">Order ' + orderId + '</div>'
+      + '<div class="success-received">&#10003;&nbsp; We have received your order and will be in touch shortly.</div>'
+      + '<div class="success-thankyou">'
+      + (vendor && vendor.email ? 'A confirmation has been sent to <strong>' + vendor.email + '</strong>.<br>' : '')
+      + 'Thank you for your business. &nbsp;—&nbsp; Terra Nova'
+      + '</div>';
   document.getElementById('footConfirmed').hidden = false;
 });
 
