@@ -94,10 +94,12 @@ function makeProductRow(p) {
           <img class="product-img" src="images/${p.img.replace(/^images\//, '')}" alt="${p.name}" loading="lazy" />
           <div>
             <div class="product-name">${p.name}${!avail ? ' <span class="unavail-badge">Unavailable</span>' : ''}</div>
+            ${p.description ? `<div class="product-description">${p.description}</div>` : ''}
             <div class="product-desc">1 ${p.orderUnit} = ${p.unitsPerOrder} ${p.unitLabel}</div>
           </div>
         </div>
       </td>
+      <td><span class="style-text">${p.style || ''}</span></td>
       <td><span class="barcode-text">${p.barcode}</span></td>
       <td><span class="sku-badge">${p.sku}</span></td>
       <td><span class="srp-text">${fmt(p.srp)}</span></td>
