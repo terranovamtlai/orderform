@@ -282,8 +282,9 @@
       border-radius: 6px; background: #f8f8f8;
       border: 1px solid var(--border); display: block;
     }
-    .prod-name { font-weight: 600; color: var(--text); }
-    .prod-meta { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+    .prod-name        { font-weight: 600; color: var(--text); }
+    .prod-description { font-size: .78rem; color: var(--text); margin-top: 2px; }
+    .prod-meta        { font-size: .75rem; color: var(--muted); margin-top: 2px; }
     .prod-price strong { color: var(--navy); }
     .prod-price small  { color: var(--muted); font-size: .75rem; }
     .prod-status-select {
@@ -928,7 +929,8 @@
                     <thead><tr>
                       <th style="width:56px"></th>
                       <th>Name</th>
-                      <th>SKU</th>
+                      <th>Style</th>
+                      <th>Barcode / SKU</th>
                       <th>SRP / Wholesale</th>
                       <th>Order Unit</th>
                       <th>Status</th>
@@ -940,9 +942,14 @@
                           <td><img class="prod-thumb" src="images/${p.img.replace(/^images\//, '')}" onerror="this.src='images/image1.png'" /></td>
                           <td>
                             <div class="prod-name">${p.name}</div>
-                            <div class="prod-meta">${p.barcode}</div>
+                            ${p.description ? `<div class="prod-description">${p.description}</div>` : ''}
+                            <div class="prod-meta" style="margin-top:2px">1 ${p.orderUnit} = ${p.unitsPerOrder} ${p.unitLabel}</div>
                           </td>
-                          <td><code style="font-size:.78rem">${p.sku}</code></td>
+                          <td><span style="font-size:.82rem">${p.style || ''}</span></td>
+                          <td>
+                            <div style="font-size:.78rem;color:var(--muted)">${p.barcode}</div>
+                            <code style="font-size:.78rem">${p.sku}</code>
+                          </td>
                           <td class="prod-price">
                             <strong>$${Number(p.srp).toFixed(2)}</strong>
                             <small>&nbsp;/&nbsp;$${Number(p.wholesale).toFixed(2)}</small>

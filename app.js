@@ -71,10 +71,10 @@ function renderProducts() {
     const escapedCat = cat.replace(/"/g, '&quot;');
     // Spacer before every category (including the first, to gap from the header)
     const availCount = catProducts.filter(p => p.available !== false && p.available !== 'false' && p.available !== 'FALSE').length;
-    allRows.push(`<tr class="cat-spacer${first ? ' cat-spacer-first' : ''}"><td colspan="8"></td></tr>`);
+    allRows.push(`<tr class="cat-spacer${first ? ' cat-spacer-first' : ''}"><td colspan="7"></td></tr>`);
     first = false;
     allRows.push(`<tr class="cat-row" onclick="toggleCatOrder(this)" data-cat="${escapedCat}">
-      <td colspan="8"><span class="cat-row-arrow">${expanded ? '▼' : '▶'}</span> ${cat} <span style="opacity:.6;font-weight:400">(${availCount})</span></td>
+      <td colspan="7"><span class="cat-row-arrow">${expanded ? '▼' : '▶'}</span> ${cat} <span style="opacity:.6;font-weight:400">(${availCount})</span></td>
     </tr>`);
     catProducts.forEach(p => {
       const row = makeProductRow(p);
@@ -101,8 +101,10 @@ function makeProductRow(p) {
         </div>
       </td>
       <td><span class="style-text">${p.style || ''}</span></td>
-      <td><span class="barcode-text">${p.barcode}</span></td>
-      <td><span class="sku-badge">${p.sku}</span></td>
+      <td>
+        <div class="barcode-text">${p.barcode}</div>
+        <div><span class="sku-badge">${p.sku}</span></div>
+      </td>
       <td><span class="srp-text">${fmt(p.srp)}</span></td>
       <td><span class="profit-badge">${profitPct(p)}%</span></td>
       <td><span class="wholesale-text">${fmt(p.wholesale)}</span></td>
@@ -570,7 +572,7 @@ async function init() {
   }
 
   document.getElementById('productBody').innerHTML =
-    `<tr><td colspan="8" style="text-align:center;padding:40px;color:#718096">Loading products&hellip;</td></tr>`;
+    `<tr><td colspan="7" style="text-align:center;padding:40px;color:#718096">Loading products&hellip;</td></tr>`;
 
   try {
     const [vendorRes, prodRes] = await Promise.all([
@@ -617,7 +619,7 @@ function showLockedMessage() {
 
 function showCatalogueError(msg) {
   document.getElementById('productBody').innerHTML =
-    `<tr><td colspan="8" style="text-align:center;padding:40px;color:#718096">${msg}</td></tr>`;
+    `<tr><td colspan="7" style="text-align:center;padding:40px;color:#718096">${msg}</td></tr>`;
 }
 
 init();
