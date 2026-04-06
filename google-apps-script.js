@@ -126,7 +126,7 @@ function handleSaveProduct(e) {
 
   // Ensure headers exist
   if (sheet.getLastRow() === 0) {
-    var headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category'];
+    var headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category','style','description'];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
     sheet.setFrozenRows(1);
@@ -140,6 +140,8 @@ function handleSaveProduct(e) {
     status === 'available', status,
     p.vendorCodes || '[]',
     p.category || 'Gift Novelties',
+    p.style || '',
+    p.description || '',
   ];
 
   // Find existing row by id
@@ -183,7 +185,7 @@ function handleSaveProducts(e) {
   if (!append) {
     // First chunk: clear and write headers
     sheet.clearContents();
-    var headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category'];
+    var headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category','style','description'];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
     sheet.setFrozenRows(1);
@@ -199,6 +201,8 @@ function handleSaveProducts(e) {
       status,
       p.vendorCodes || '[]',
       p.category || 'Gift Novelties',
+      p.style || '',
+      p.description || '',
     ]);
   });
 

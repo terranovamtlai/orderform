@@ -506,6 +506,17 @@
           </select>
         </div>
       </div>
+      <!-- Style + Description -->
+      <div class="modal-grid">
+        <div class="modal-field full">
+          <label class="modal-label">Style</label>
+          <input class="modal-input" id="m-style" type="text" placeholder="e.g. Unisex Crew, Women's Low-Cut" />
+        </div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Description</label>
+        <textarea class="modal-input" id="m-description" rows="4" placeholder="Product description…" style="resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+      </div>
       <!-- Vendor visibility -->
       <div class="modal-field">
         <label class="modal-label">Visible to Vendors (all checked = visible to everyone)</label>
@@ -966,6 +977,8 @@
       document.getElementById('m-unitsPerOrder').value      = p.unitsPerOrder  || 6;
       document.getElementById('m-unitLabel').value          = p.unitLabel      || 'pairs';
       document.getElementById('m-status').value             = p.status         || 'available';
+      document.getElementById('m-style').value              = p.style          || '';
+      document.getElementById('m-description').value        = p.description    || '';
       const imgVal = (p.img || 'image1.png').replace(/^images\//, '');
       document.getElementById('m-img').value                = imgVal;
       const prev = document.getElementById('m-img-preview');
@@ -1013,6 +1026,8 @@
         available:     status === 'available',
         category:      document.getElementById('m-category').value,
         vendorCodes:   JSON.stringify(codes),
+        style:         document.getElementById('m-style').value.trim(),
+        description:   document.getElementById('m-description').value.trim(),
       };
       let saved;
       if (editingIdx !== null) {
