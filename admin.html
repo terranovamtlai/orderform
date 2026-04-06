@@ -434,30 +434,25 @@
       <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <!-- Image -->
-      <div class="modal-img-row">
-        <img class="modal-img-preview" id="m-img-preview" src="images/image1.png" alt="" />
-        <div class="modal-field" style="flex:1">
-          <label class="modal-label">Image</label>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input class="modal-input" id="m-img" type="text" placeholder="image1.png" style="flex:1"
-                   oninput="document.getElementById('m-img-preview').src='images/'+this.value" />
-            <button type="button" class="btn btn-secondary" style="white-space:nowrap;flex-shrink:0" onclick="document.getElementById('m-img-file').click()">&#8679; Upload</button>
-            <input type="file" id="m-img-file" accept="image/*" style="display:none" onchange="handleImageUpload(this)" />
-          </div>
-          <div id="m-img-upload-status" style="font-size:.78rem;margin-top:4px;min-height:18px"></div>
-        </div>
+      <!-- Category -->
+      <div class="modal-field">
+        <label class="modal-label">Category</label>
+        <select class="modal-input" id="m-category"></select>
       </div>
-      <!-- Name + Category -->
-      <div class="modal-grid">
-        <div class="modal-field full">
-          <label class="modal-label">Product Name</label>
-          <input class="modal-input" id="m-name" type="text" placeholder="e.g. Bacon Socks" />
-        </div>
-        <div class="modal-field full">
-          <label class="modal-label">Category</label>
-          <select class="modal-input" id="m-category"></select>
-        </div>
+      <!-- Product Name -->
+      <div class="modal-field">
+        <label class="modal-label">Product Name</label>
+        <input class="modal-input" id="m-name" type="text" placeholder="e.g. Bacon Socks" />
+      </div>
+      <!-- Description -->
+      <div class="modal-field">
+        <label class="modal-label">Description</label>
+        <textarea class="modal-input" id="m-description" rows="4" placeholder="Product description…" style="resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+      </div>
+      <!-- Style -->
+      <div class="modal-field">
+        <label class="modal-label">Style</label>
+        <input class="modal-input" id="m-style" type="text" placeholder="e.g. Unisex Crew, Women's Low-Cut" />
       </div>
       <!-- Barcode / SKU -->
       <div class="modal-grid">
@@ -506,16 +501,19 @@
           </select>
         </div>
       </div>
-      <!-- Style + Description -->
-      <div class="modal-grid">
-        <div class="modal-field full">
-          <label class="modal-label">Style</label>
-          <input class="modal-input" id="m-style" type="text" placeholder="e.g. Unisex Crew, Women's Low-Cut" />
+      <!-- Image -->
+      <div class="modal-img-row">
+        <img class="modal-img-preview" id="m-img-preview" src="images/image1.png" alt="" />
+        <div class="modal-field" style="flex:1">
+          <label class="modal-label">Image</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="modal-input" id="m-img" type="text" placeholder="image1.png" style="flex:1"
+                   oninput="document.getElementById('m-img-preview').src='images/'+this.value" />
+            <button type="button" class="btn btn-secondary" style="white-space:nowrap;flex-shrink:0" onclick="document.getElementById('m-img-file').click()">&#8679; Upload</button>
+            <input type="file" id="m-img-file" accept="image/*" style="display:none" onchange="handleImageUpload(this)" />
+          </div>
+          <div id="m-img-upload-status" style="font-size:.78rem;margin-top:4px;min-height:18px"></div>
         </div>
-      </div>
-      <div class="modal-field">
-        <label class="modal-label">Description</label>
-        <textarea class="modal-input" id="m-description" rows="4" placeholder="Product description…" style="resize:vertical;font-family:inherit;line-height:1.5"></textarea>
       </div>
       <!-- Vendor visibility -->
       <div class="modal-field">
