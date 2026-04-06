@@ -70,10 +70,11 @@ function renderProducts() {
     const expanded   = expandedOrderCats.has(cat);
     const escapedCat = cat.replace(/"/g, '&quot;');
     // Spacer before every category (including the first, to gap from the header)
-    allRows.push(`<tr class="cat-spacer${first ? ' cat-spacer-first' : ''}"><td colspan="7"></td></tr>`);
+    const availCount = catProducts.filter(p => p.available !== false && p.available !== 'false' && p.available !== 'FALSE').length;
+    allRows.push(`<tr class="cat-spacer${first ? ' cat-spacer-first' : ''}"><td colspan="8"></td></tr>`);
     first = false;
     allRows.push(`<tr class="cat-row" onclick="toggleCatOrder(this)" data-cat="${escapedCat}">
-      <td colspan="7"><span class="cat-row-arrow">${expanded ? '▼' : '▶'}</span> ${cat}</td>
+      <td colspan="8"><span class="cat-row-arrow">${expanded ? '▼' : '▶'}</span> ${cat} <span style="opacity:.6;font-weight:400">(${availCount})</span></td>
     </tr>`);
     catProducts.forEach(p => {
       const row = makeProductRow(p);
@@ -569,7 +570,7 @@ async function init() {
   }
 
   document.getElementById('productBody').innerHTML =
-    `<tr><td colspan="7" style="text-align:center;padding:40px;color:#718096">Loading products&hellip;</td></tr>`;
+    `<tr><td colspan="8" style="text-align:center;padding:40px;color:#718096">Loading products&hellip;</td></tr>`;
 
   try {
     const [vendorRes, prodRes] = await Promise.all([
@@ -616,7 +617,7 @@ function showLockedMessage() {
 
 function showCatalogueError(msg) {
   document.getElementById('productBody').innerHTML =
-    `<tr><td colspan="7" style="text-align:center;padding:40px;color:#718096">${msg}</td></tr>`;
+    `<tr><td colspan="8" style="text-align:center;padding:40px;color:#718096">${msg}</td></tr>`;
 }
 
 init();
