@@ -50,6 +50,7 @@ function doGet(e) {
   const action = (e.parameter && e.parameter.action) || 'submitOrder';
   try {
     if      (action === 'getProducts')       return handleGetProducts(e);
+    else if (action === 'getUploadToken')    return handleGetUploadToken();
     else if (action === 'saveProduct')       return handleSaveProduct(e);
     else if (action === 'deleteProduct')     return handleDeleteProduct(e);
     else if (action === 'saveProducts')      return handleSaveProducts(e);
@@ -107,6 +108,13 @@ function handleGetProducts(e) {
   }
 
   return json(products);
+}
+
+/* ── GitHub image upload token ──────────────────────────────── */
+function handleGetUploadToken() {
+  var pat = PropertiesService.getScriptProperties().getProperty('GITHUB_PAT');
+  if (!pat) return json({ status: 'error', message: 'GITHUB_PAT not set in Script Properties' });
+  return json({ status: 'ok', token: pat });
 }
 
 /* ── Products: upsert single row ────────────────────────────── */

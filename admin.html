@@ -438,9 +438,14 @@
       <div class="modal-img-row">
         <img class="modal-img-preview" id="m-img-preview" src="images/image1.png" alt="" />
         <div class="modal-field" style="flex:1">
-          <label class="modal-label">Image filename</label>
-          <input class="modal-input" id="m-img" type="text" placeholder="image1.png"
-                 oninput="document.getElementById('m-img-preview').src='images/'+this.value" />
+          <label class="modal-label">Image</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="modal-input" id="m-img" type="text" placeholder="image1.png" style="flex:1"
+                   oninput="document.getElementById('m-img-preview').src='images/'+this.value" />
+            <button type="button" class="btn btn-secondary" style="white-space:nowrap;flex-shrink:0" onclick="document.getElementById('m-img-file').click()">&#8679; Upload</button>
+            <input type="file" id="m-img-file" accept="image/*" style="display:none" onchange="handleImageUpload(this)" />
+          </div>
+          <div id="m-img-upload-status" style="font-size:.78rem;margin-top:4px;min-height:18px"></div>
         </div>
       </div>
       <!-- Name + Category -->
@@ -694,6 +699,74 @@
     let editingIdx    = null;
     const expandedCats = new Set();
 
+    /* ── Image upload ── */
+    async function handleImageUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById('m-img-upload-status');
+      const preview  = document.getElementById('m-img-preview');
+      const filenameEl = document.getElementById('m-img');
+
+      // Show local preview immediately
+      const localUrl = URL.createObjectURL(file);
+      preview.src = localUrl;
+
+      statusEl.style.color = 'var(--muted)';
+      statusEl.textContent  = 'Uploading…';
+
+      try {
+        // Get PAT from Apps Script
+        const tokenRes  = await fetch(`${WEBHOOK}?action=getUploadToken`);
+        const tokenData = await tokenRes.json();
+        if (tokenData.status !== 'ok') throw new Error(tokenData.message);
+        const pat = tokenData.token;
+
+        // Read file as base64
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload  = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const filename = file.name.toLowerCase().replace(/\s+/g, '_');
+        const apiUrl   = `https://api.github.com/repos/terranovamtlai/orderform/contents/images/${filename}`;
+
+        // Check if file already exists (need sha to update)
+        let sha = null;
+        const checkRes = await fetch(apiUrl, { headers: { Authorization: `token ${pat}` } });
+        if (checkRes.ok) {
+          sha = (await checkRes.json()).sha;
+        }
+
+        const body = { message: `Add product image: ${filename}`, content: base64, branch: 'main' };
+        if (sha) body.sha = sha;
+
+        const uploadRes = await fetch(apiUrl, {
+          method:  'PUT',
+          headers: { Authorization: `token ${pat}`, 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body),
+        });
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json();
+          throw new Error(err.message || 'GitHub API error');
+        }
+
+        // Update filename field and preview to committed path
+        filenameEl.value = filename;
+        preview.src      = `images/${filename}`;
+        statusEl.style.color = '#2d9c5e';
+        statusEl.textContent = `✓ Uploaded: ${filename}`;
+        URL.revokeObjectURL(localUrl);
+
+      } catch (err) {
+        statusEl.style.color = 'var(--red, #e53e3e)';
+        statusEl.textContent = 'Upload failed: ' + err.message;
+      }
+      // Reset file input so the same file can be re-selected if needed
+      input.value = '';
+    }
+
     async function persistProduct(p) {
       try {
         const url = `${WEBHOOK}?action=saveProduct&payload=${encodeURIComponent(JSON.stringify(p))}`;
@@ -911,6 +984,7 @@
             </label>`).join('');
       const sel = document.getElementById('m-category');
       sel.innerHTML = allCategories.map(c => `<option value="${c}"${c === (p.category || allCategories[0]) ? ' selected' : ''}>${c}</option>`).join('');
+      document.getElementById('m-img-upload-status').textContent = '';
       document.getElementById('productModal').showModal();
     }
 
