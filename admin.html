@@ -109,6 +109,35 @@
     .toast.success { background: var(--green); }
     .toast.error   { background: var(--red); }
 
+    /* ── Rebuild overlay ── */
+    #rebuildOverlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 800;
+      align-items: center; justify-content: center;
+    }
+    #rebuildOverlay.show { display: flex; }
+    #rebuildOverlay .rebuild-box {
+      background: #fff; border-radius: 12px;
+      padding: 36px 48px; text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,.25); min-width: 280px;
+    }
+    #rebuildOverlay .rebuild-title {
+      font-size: 1.1rem; font-weight: 700; color: var(--navy); margin-bottom: 10px;
+    }
+    #rebuildOverlay .rebuild-msg {
+      font-size: .9rem; color: var(--muted);
+    }
+    #rebuildOverlay .rebuild-spinner {
+      width: 36px; height: 36px; border: 4px solid #e2e8f0;
+      border-top-color: var(--navy); border-radius: 50%;
+      animation: spin .8s linear infinite; margin: 16px auto 0;
+    }
+    #rebuildOverlay .rebuild-check {
+      font-size: 2rem; color: var(--green); margin: 12px auto 0; display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeOutOverlay { to { opacity: 0; } }
+
     /* ── Product table ── */
     .table-wrap {
       background: var(--surface); border-radius: 8px;
@@ -526,6 +555,15 @@
       <button class="btn btn-success"   onclick="saveModal()">&#10003; Save Product</button>
     </div>
   </dialog>
+
+  <div id="rebuildOverlay">
+    <div class="rebuild-box">
+      <div class="rebuild-title" id="rebuildTitle">Rebuilding Sheet…</div>
+      <div class="rebuild-msg"  id="rebuildMsg">Please wait</div>
+      <div class="rebuild-spinner" id="rebuildSpinner"></div>
+      <div class="rebuild-check"  id="rebuildCheck">✓</div>
+    </div>
+  </div>
 
   <div class="toast" id="toast"></div>
 
@@ -1043,13 +1081,27 @@
 
     async function saveProducts() {
       if (!allProducts.length) { toast('No products to save.', 'error'); return; }
+      if (!confirm(`Rebuild the entire Products sheet from scratch?\n\nThis will overwrite all ${allProducts.length} products in the sheet. Are you sure?`)) return;
+
       const products  = allProducts.map((p, i) => ({ ...p, id: i + 1 }));
       const chunkSize = 8;
       const chunks    = [];
       for (let i = 0; i < products.length; i += chunkSize) {
         chunks.push(products.slice(i, i + chunkSize));
       }
-      setStatus('loading', `Saving to sheet… (0 / ${products.length})`);
+
+      // Show overlay
+      const overlay  = document.getElementById('rebuildOverlay');
+      const title    = document.getElementById('rebuildTitle');
+      const msg      = document.getElementById('rebuildMsg');
+      const spinner  = document.getElementById('rebuildSpinner');
+      const check    = document.getElementById('rebuildCheck');
+      title.textContent   = 'Rebuilding Sheet…';
+      msg.textContent     = `0 of ${products.length} products`;
+      spinner.style.display = '';
+      check.style.display   = 'none';
+      overlay.classList.add('show');
+
       try {
         let saved = 0;
         for (let ci = 0; ci < chunks.length; ci++) {
@@ -1060,13 +1112,30 @@
           const data    = await res.json();
           if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
           saved += data.saved;
-          setStatus('loading', `Saving to sheet… (${saved} / ${products.length})`);
+          msg.textContent = `${saved} of ${products.length} products`;
         }
+
+        // Show completion
+        title.textContent     = 'Sheet Rebuilt';
+        msg.textContent       = `${saved} products saved successfully`;
+        spinner.style.display = 'none';
+        check.style.display   = '';
+
+        setTimeout(() => {
+          overlay.style.transition = 'opacity .6s';
+          overlay.style.opacity    = '0';
+          setTimeout(() => {
+            overlay.classList.remove('show');
+            overlay.style.transition = '';
+            overlay.style.opacity    = '';
+          }, 600);
+        }, 1800);
+
         setStatus('success', `✓ ${saved} products saved to sheet.`);
-        toast('Sheet rebuilt!', 'success');
       } catch (err) {
-        setStatus('error', 'Save failed: ' + err.message);
-        toast('Save failed.', 'error');
+        overlay.classList.remove('show');
+        setStatus('error', 'Rebuild failed: ' + err.message);
+        toast('Rebuild failed.', 'error');
       }
     }
 
