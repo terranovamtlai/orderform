@@ -386,6 +386,48 @@ body {
 .srp-label { color: var(--navy) !important; font-weight: 600; }
 .srp-value { color: var(--green) !important; font-size: .95rem; }
 
+/* Customer info fields */
+.customer-info {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.customer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.customer-field label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.customer-field input {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: .85rem;
+  color: var(--text);
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+}
+.customer-field input:focus {
+  outline: none;
+  border-color: var(--navy);
+  box-shadow: 0 0 0 2px rgba(30,58,95,.12);
+}
+.customer-error {
+  font-size: .82rem;
+  color: #c0392b;
+  font-weight: 600;
+  padding: 4px 0 0;
+}
+
 /* Submit button */
 .btn-submit {
   display: block;

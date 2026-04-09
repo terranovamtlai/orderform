@@ -82,6 +82,22 @@
           </div>
         </div>
 
+        <div class="customer-info">
+          <div class="customer-field">
+            <label for="storeCode">Store Code</label>
+            <input type="text" id="storeCode" placeholder="Your store code" autocomplete="off" />
+          </div>
+          <div class="customer-field">
+            <label for="customerEmail">Email Address</label>
+            <input type="email" id="customerEmail" placeholder="your@email.com" autocomplete="email" />
+          </div>
+          <div class="customer-field">
+            <label for="confirmEmail">Confirm Email</label>
+            <input type="email" id="confirmEmail" placeholder="Confirm your email" autocomplete="email" />
+          </div>
+          <div class="customer-error" id="customerError" hidden></div>
+        </div>
+
         <button class="btn-submit" id="btnSubmit" hidden>Submit Order &rarr;</button>
 
       </div>

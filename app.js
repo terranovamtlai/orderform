@@ -311,6 +311,35 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
   const data = buildOrderData();
   if (!data.lines.length) return;
 
+  // Validate customer fields
+  const storeCode     = document.getElementById('storeCode').value.trim();
+  const customerEmail = document.getElementById('customerEmail').value.trim();
+  const confirmEmail  = document.getElementById('confirmEmail').value.trim();
+  const errorEl       = document.getElementById('customerError');
+
+  if (!storeCode) {
+    errorEl.textContent = 'Please enter your store code.';
+    errorEl.hidden = false;
+    document.getElementById('storeCode').focus();
+    return;
+  }
+  if (!customerEmail) {
+    errorEl.textContent = 'Please enter your email address.';
+    errorEl.hidden = false;
+    document.getElementById('customerEmail').focus();
+    return;
+  }
+  if (customerEmail.toLowerCase() !== confirmEmail.toLowerCase()) {
+    errorEl.textContent = 'Email addresses do not match. Please check and try again.';
+    errorEl.hidden = false;
+    document.getElementById('confirmEmail').focus();
+    return;
+  }
+  errorEl.hidden = true;
+
+  data.storeCode     = storeCode;
+  data.customerEmail = customerEmail;
+
   // Populate body
   document.getElementById('dialogBody').innerHTML = buildDialogBodyHTML(data);
 
@@ -346,6 +375,8 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
 
   // Snapshot order data before clearing
   confirmedOrder = buildOrderData();
+  confirmedOrder.storeCode     = document.getElementById('storeCode').value.trim();
+  confirmedOrder.customerEmail = document.getElementById('customerEmail').value.trim();
 
   // Show submitting state in dialog
   document.getElementById('dialogTitle').textContent = 'Submitting Order…';
@@ -380,7 +411,7 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
     : '<div class="success-order-id">Order ' + orderId + '</div>'
       + '<div class="success-received">&#10003;&nbsp; We have received your order and will be in touch shortly.</div>'
       + '<div class="success-thankyou">'
-      + (vendor && vendor.email ? 'A confirmation has been sent to <strong>' + vendor.email + '</strong>.<br>' : '')
+      + (confirmedOrder.customerEmail ? 'A confirmation has been sent to <strong>' + confirmedOrder.customerEmail + '</strong>.<br>' : '')
       + 'Thank you for your business. &nbsp;—&nbsp; Terra Nova'
       + '</div>';
   document.getElementById('footConfirmed').hidden = false;
@@ -414,7 +445,8 @@ async function submitToGoogleSheet(data) {
     totalRetail:          data.totalRetail,
     vendorCode:           vendor ? vendor.code    : '',
     vendorCompany:        vendor ? vendor.company : '',
-    vendorEmail:          vendor ? vendor.email   : '',
+    storeCode:            data.storeCode     || '',
+    customerEmail:        data.customerEmail || '',
   };
 
   // Use GET + URL params — POST bodies are silently dropped by Google's

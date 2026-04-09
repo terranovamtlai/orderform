@@ -10,7 +10,7 @@
  *   orderform
  */
 
-const ORDER_EMAIL       = 'terranovamtlai@gmail.com';
+const ORDER_EMAIL       = 'terranova.tonyz@gmail.com';
 const SPREADSHEET_ID    = '10H9CTzRHUGK6SrukXklahr0ebQvJR8bueNL8VZEmses';
 const ORDERS_SHEET      = 'Orders';
 const PRODUCTS_SHEET    = 'Products';
@@ -230,7 +230,7 @@ function handleSubmitOrder(e) {
       'Wholesale/Unit ($)','Line Wholesale ($)',
       'SRP/Unit ($)','Line SRP ($)',
       'Order Sent','Invoice Sent','Payment Received','Cancelled',
-      'Company','Vendor Code',
+      'Company','Vendor Code','Store Code','Customer Email',
     ];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
@@ -256,8 +256,10 @@ function handleSubmitOrder(e) {
     '', data.totalWholesale,
     '', data.totalRetail,
     '','','','',                  // status checkboxes (cols 13–16)
-    data.vendorCompany || '',     // col 17
-    data.vendorCode    || '',     // col 18
+    data.vendorCompany  || '',    // col 17
+    data.vendorCode     || '',    // col 18
+    data.storeCode      || '',    // col 19
+    data.customerEmail  || '',    // col 20
   ]);
   sheet.getRange(sheet.getLastRow(), 1, 1, 12)
        .setFontStyle('italic')
@@ -300,8 +302,8 @@ function sendOrderEmail(data) {
     + '</div></div>';
 
   MailApp.sendEmail({ to: ORDER_EMAIL, subject: 'New Terra Nova Order — ' + data.orderId, htmlBody: html });
-  if (data.vendorEmail) {
-    MailApp.sendEmail({ to: data.vendorEmail, subject: 'Your Terra Nova Order Confirmation — ' + data.orderId, htmlBody: html });
+  if (data.customerEmail) {
+    MailApp.sendEmail({ to: data.customerEmail, subject: 'Your Terra Nova Order Confirmation — ' + data.orderId, htmlBody: html });
   }
 }
 
@@ -393,7 +395,7 @@ function handleGetVendor(e) {
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][0]).toUpperCase() === code) {
-      return json({ status: 'ok', code: rows[i][0], company: rows[i][1], email: rows[i][2] });
+      return json({ status: 'ok', code: rows[i][0], company: rows[i][1] });
     }
   }
   return json({ status: 'notfound' });
@@ -405,7 +407,7 @@ function handleGetVendors() {
   if (!sheet || sheet.getLastRow() < 2) return json([]);
   var rows = sheet.getDataRange().getValues();
   return json(rows.slice(1).filter(function(r) { return r[0]; }).map(function(r) {
-    return { code: r[0], company: r[1], email: r[2] };
+    return { code: r[0], company: r[1] };
   }));
 }
 
@@ -415,10 +417,10 @@ function handleSaveVendors(e) {
   var sheet = ss.getSheetByName(VENDORS_SHEET);
   if (!sheet) sheet = ss.insertSheet(VENDORS_SHEET);
   sheet.clearContents();
-  sheet.appendRow(['code', 'company', 'email']);
-  sheet.getRange(1, 1, 1, 3).setFontWeight('bold');
+  sheet.appendRow(['code', 'company']);
+  sheet.getRange(1, 1, 1, 2).setFontWeight('bold');
   sheet.setFrozenRows(1);
-  vendors.forEach(function(v) { sheet.appendRow([v.code, v.company, v.email]); });
+  vendors.forEach(function(v) { sheet.appendRow([v.code, v.company]); });
   return json({ status: 'ok', saved: vendors.length });
 }
 
