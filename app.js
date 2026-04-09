@@ -269,7 +269,7 @@ function buildOrderData() {
   return { lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail };
 }
 
-function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail }) {
+function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail, storeCode, customerEmail }) {
   const rows = lines.map(({ p, qty, units, lineW }) => `
     <tr>
       <td>${p.name}</td>
@@ -282,6 +282,11 @@ function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, tot
   `).join('');
 
   return `
+    <div class="dialog-order-meta">
+      ${vendor && vendor.company ? `<div class="dom-row"><span class="dom-label">Store Name</span><span class="dom-value">${vendor.company}</span></div>` : ''}
+      ${storeCode                ? `<div class="dom-row"><span class="dom-label">Store Code</span><span class="dom-value">${storeCode}</span></div>` : ''}
+      ${customerEmail            ? `<div class="dom-row"><span class="dom-label">Confirmation sent to</span><span class="dom-value">${customerEmail}</span></div>` : ''}
+    </div>
     <table>
       <thead>
         <tr>

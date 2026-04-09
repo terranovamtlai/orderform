@@ -509,6 +509,33 @@ body {
   opacity: .8;
 }
 
+.dialog-order-meta {
+  background: #f0f4f8;
+  border-radius: 7px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: .82rem;
+}
+.dom-label {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.dom-value {
+  font-weight: 700;
+  color: var(--navy);
+  text-align: right;
+  word-break: break-all;
+}
+
 .dialog-body {
   padding: 20px;
   max-height: 55vh;
