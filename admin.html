@@ -247,6 +247,11 @@
     .detail-inner table { font-size: .82rem; }
     .detail-inner thead th { background: #e2e8f0; color: var(--text); font-size: .7rem; }
     .detail-inner tbody tr:hover { background: transparent; }
+    .order-detail-meta {
+      display: flex; flex-wrap: wrap; gap: 6px 24px;
+      margin-bottom: 10px; font-size: .8rem; color: var(--text);
+    }
+    .order-detail-meta strong { color: var(--muted); font-weight: 600; }
     .show-cancelled-wrap { font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
     .show-cancelled-wrap input { width: auto; }
 
@@ -411,6 +416,7 @@
               <tr>
                 <th>Order #</th>
                 <th>Date</th>
+                <th>Store</th>
                 <th>Items</th>
                 <th>Order Units</th>
                 <th>Total Units</th>
@@ -1169,7 +1175,7 @@
       const visible = showCancelled ? allOrders : allOrders.filter(o => !o.cancelled);
 
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:28px">
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:28px">
           ${allOrders.length ? 'All orders are cancelled. Check "Show cancelled" to view them.' : 'No orders yet.'}
         </td></tr>`;
         return;
@@ -1187,6 +1193,10 @@
             </div>
           </td>
           <td class="order-date">${fmtDate(order.date)}</td>
+          <td>
+            ${order.company ? `<div style="font-weight:600;font-size:.82rem">${order.company}</div>` : ''}
+            ${order.storeCode ? `<div style="font-size:.75rem;color:var(--muted)">${order.storeCode}</div>` : ''}
+          </td>
           <td style="text-align:center">${order.lines.length}</td>
           <td style="text-align:center">${order.totalOrderUnits}</td>
           <td style="text-align:center">${order.totalIndividualUnits}</td>
@@ -1211,8 +1221,13 @@
         detailTr.classList.add('detail-row');
         detailTr.id = 'detail-' + order.orderId;
         detailTr.style.display = 'none';
-        detailTr.innerHTML = `<td colspan="10">
+        detailTr.innerHTML = `<td colspan="11">
           <div class="detail-inner">
+            <div class="order-detail-meta">
+              ${order.company       ? `<span><strong>Store Name:</strong> ${order.company}</span>` : ''}
+              ${order.storeCode     ? `<span><strong>Store Code:</strong> ${order.storeCode}</span>` : ''}
+              ${order.customerEmail ? `<span><strong>Email:</strong> ${order.customerEmail}</span>` : ''}
+            </div>
             <table>
               <thead><tr>
                 <th style="text-align:left">Product</th>

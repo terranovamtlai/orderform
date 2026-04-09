@@ -317,6 +317,7 @@ function handleGetOrders() {
   // Columns: 0=Date 1=OrderID 2=Product 3=SKU 4=Barcode 5=OrderUnit
   //          6=OrderQty 7=TotalUnits 8=WholesaleUnit 9=LineWholesale 10=SRPUnit 11=LineSRP
   //          12=OrderSent 13=InvoiceSent 14=PaymentReceived 15=Cancelled
+  //          16=Company 17=VendorCode 18=StoreCode 19=CustomerEmail
 
   const orders  = [];
   let   current = null;
@@ -336,6 +337,10 @@ function handleGetOrders() {
         current.invoiceSent          = row[13] === true;
         current.paymentReceived      = row[14] === true;
         current.cancelled            = row[15] === true;
+        current.company              = row[16] || '';
+        current.vendorCode           = row[17] || '';
+        current.storeCode            = row[18] || '';
+        current.customerEmail        = row[19] || '';
         orders.push(current);
         current = null;
       }
