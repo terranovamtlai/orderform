@@ -466,7 +466,22 @@ function buildOrderData() {
   return { lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail };
 }
 
-function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail, storeCode, customerEmail }) {
+function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail, storeCode, customerEmail, company, contactName }) {
+  const storeRows = [
+    company     ? ['Company',    company]    : null,
+    storeCode   ? ['Store Code', storeCode]  : null,
+    contactName ? ['Contact',    contactName]: null,
+    customerEmail ? ['Email',    customerEmail] : null,
+  ].filter(Boolean).map(([label, val]) => `
+    <tr><th>${label}</th><td>${val}</td></tr>
+  `).join('');
+
+  const storeInfoTable = storeRows ? `
+    <table class="dialog-store-info">
+      <tbody>${storeRows}</tbody>
+    </table>
+  ` : '';
+
   const rows = lines.map(({ p, qty, units, lineW }) => `
     <tr>
       <td>${p.name}</td>
@@ -479,6 +494,7 @@ function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, tot
   `).join('');
 
   return `
+    ${storeInfoTable}
     <table>
       <thead>
         <tr>
@@ -512,18 +528,14 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
 
   data.storeCode     = currentStore.storeCode;
   data.customerEmail = currentStore.email;
+  data.company       = currentStore.company || '';
+  data.contactName   = currentStore.firstName ? currentStore.firstName + ' ' + currentStore.lastName : '';
 
   // Populate body
   document.getElementById('dialogBody').innerHTML = buildDialogBodyHTML(data);
 
-  // Populate header meta
-  const headMeta = document.getElementById('dialogHeadMeta');
-  const parts = [];
-  if (currentStore && currentStore.company)   parts.push(currentStore.company);
-  if (currentStore && currentStore.storeCode) parts.push(currentStore.storeCode);
-  if (currentStore && currentStore.firstName) parts.push(currentStore.firstName + ' ' + currentStore.lastName);
-  if (currentStore && currentStore.email)     parts.push(currentStore.email);
-  headMeta.innerHTML = parts.map(p => `<span class="dhm-item">${p}</span>`).join('');
+  // Clear header meta — store info is now shown in the body table
+  document.getElementById('dialogHeadMeta').innerHTML = '';
 
   // Reset to review state
   document.getElementById('dialogTitle').textContent  = 'Review Order';
