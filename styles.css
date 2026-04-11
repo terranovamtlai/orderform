@@ -472,10 +472,27 @@ body {
   color: #fff;
   padding: 16px 20px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
 }
+.dialog-head-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .dialog-head h2 { font-size: 1rem; }
+.dialog-head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.dhm-item {
+  font-size: .74rem;
+  color: rgba(255,255,255,.7);
+  white-space: nowrap;
+}
+.dhm-item + .dhm-item::before {
+  content: '·';
+  margin-right: 10px;
+  opacity: .45;
+}
 .dialog-close {
   background: none;
   border: none;

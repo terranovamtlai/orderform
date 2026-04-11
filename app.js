@@ -523,6 +523,15 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
   // Populate body
   document.getElementById('dialogBody').innerHTML = buildDialogBodyHTML(data);
 
+  // Populate header meta
+  const headMeta = document.getElementById('dialogHeadMeta');
+  const parts = [];
+  if (currentStore && currentStore.company)   parts.push(currentStore.company);
+  if (currentStore && currentStore.storeCode) parts.push(currentStore.storeCode);
+  if (currentStore && currentStore.firstName) parts.push(currentStore.firstName + ' ' + currentStore.lastName);
+  if (currentStore && currentStore.email)     parts.push(currentStore.email);
+  headMeta.innerHTML = parts.map(p => `<span class="dhm-item">${p}</span>`).join('');
+
   // Reset to review state
   document.getElementById('dialogTitle').textContent  = 'Review Order';
   document.getElementById('dialogSuccess').hidden     = true;
@@ -586,6 +595,7 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
 
   // Switch dialog to Confirmed state
   document.getElementById('dialogTitle').textContent = submitError ? 'Submission Problem' : 'Order Submitted';
+  document.getElementById('dialogHeadMeta').innerHTML = '';
   successEl.innerHTML = submitError
     ? '<span style="color:#c0392b;font-size:1rem;font-weight:600">&#9888; Your order could not be recorded. Please email your order directly to Terra Nova.</span>'
     : '<div class="success-order-id">Order ' + orderId + '</div>'
@@ -627,6 +637,7 @@ async function submitToGoogleSheet(data) {
     vendorCompany:        vendor ? vendor.company : '',
     storeCode:            data.storeCode     || '',
     customerEmail:        data.customerEmail || '',
+    contactName:          currentStore ? (currentStore.firstName + ' ' + currentStore.lastName).trim() : '',
   };
 
   // Use GET + URL params — POST bodies are silently dropped by Google's
