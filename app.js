@@ -799,7 +799,7 @@ async function init() {
     }
     vendor = vendorData;
     const badge = document.getElementById('vendorBadge');
-    badge.textContent = vendorData.company;
+    badge.querySelector('.vendor-banner-name').textContent = vendorData.company;
     badge.hidden = false;
 
     const data = await prodRes.json();

@@ -75,13 +75,18 @@ body {
   color: #fff;
   white-space: nowrap;
 }
-.vendor-badge {
-  background: var(--orange);
-  border-radius: 20px;
-  padding: 3px 12px;
-  font-size: .75rem;
-  color: #fff;
-  white-space: nowrap;
+.vendor-banner {
+  background: var(--navy);
+  border-bottom: 3px solid var(--navy-lt);
+  text-align: center;
+  padding: 10px 24px;
+}
+.vendor-banner-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #e8d5b7;
 }
 
 /* ============================================================

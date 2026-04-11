@@ -206,12 +206,29 @@
     #invTable td:first-child { text-align: left; }
 
     /* ── Orders table ── */
-    #ordersTable thead th { text-align: center; }
-    #ordersTable thead th:first-child,
-    #ordersTable thead th:nth-child(2) { text-align: left; }
-    #ordersTable td { text-align: center; }
-    #ordersTable td:first-child,
-    #ordersTable td:nth-child(2) { text-align: left; }
+    #ordersTable thead th { text-align: center; white-space: nowrap; }
+    #ordersTable thead th:nth-child(2),
+    #ordersTable thead th:nth-child(3),
+    #ordersTable thead th:nth-child(4) { text-align: left; }
+
+    /* Order group header rows */
+    .order-group-row { cursor: pointer; user-select: none; }
+    .order-group-row td {
+      background: var(--navy);
+      color: rgba(255,255,255,.92);
+      padding: 11px 14px;
+      font-weight: 700;
+      font-size: .88rem;
+      border-bottom: none;
+    }
+    .order-group-row:hover td { background: var(--navy-lt); }
+    .order-group-arrow {
+      font-size: .65rem; opacity: .6; margin-right: 8px;
+      display: inline-block; transition: transform .15s;
+    }
+    .order-group-arrow.open { transform: rotate(90deg); opacity: 1; }
+    .order-group-meta  { font-size: .78rem; color: rgba(255,255,255,.5); margin-left: 10px; font-weight: 400; }
+    .order-group-total { font-size: .85rem; color: rgba(255,255,255,.85); font-weight: 700; }
 
     .order-id { font-family: monospace; font-size: .8rem; color: var(--navy); font-weight: 600; white-space: nowrap; }
     .order-date { font-size: .8rem; color: var(--muted); white-space: nowrap; }
@@ -449,17 +466,16 @@
           <table id="ordersTable">
             <thead>
               <tr>
-                <th>Order #</th>
-                <th>Date</th>
-                <th>Store</th>
-                <th>Items</th>
-                <th>Order Units</th>
-                <th>Total Units</th>
-                <th>Wholesale Total</th>
-                <th>Order Sent</th>
-                <th>Invoice Sent</th>
-                <th>Payment Received</th>
-                <th>Actions</th>
+                <th style="width:32px"></th>
+                <th style="min-width:160px">Order #</th>
+                <th style="min-width:130px">Store</th>
+                <th style="min-width:90px">Store Code</th>
+                <th style="width:90px">Total Units</th>
+                <th style="width:110px;text-align:right">Wholesale</th>
+                <th style="width:64px">Sent</th>
+                <th style="width:64px">Invoice</th>
+                <th style="width:72px">Payment</th>
+                <th style="width:80px">Actions</th>
               </tr>
             </thead>
             <tbody id="ordersBody"></tbody>
@@ -760,14 +776,14 @@
         +   '</button>'
         + '</td>'
         + '<td><code style="font-size:.8rem;letter-spacing:.05em">' + ec + '</code>' + badge + '</td>'
-        + '<td><input type="text" class="f-vcompany" value="' + escH(v.company) + '" placeholder="Company name" style="width:100%" /></td>'
-        + '<td style="white-space:nowrap">'
-        +   '<div style="display:flex;gap:6px;flex-wrap:wrap">'
-        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="copyVendorURL(\'' + ec + '\', this)">Get URL</button>'
-        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="window.open(\'' + escH(getOrderFormURL(v.code)) + '\', \'_blank\')">Test URL</button>'
-        +     '<button class="btn btn-danger"    style="font-size:.75rem;padding:4px 10px" onclick="deleteVendor(\'' + ec + '\')">Delete</button>'
+        + '<td colspan="2"><div style="display:flex;align-items:center;gap:8px">'
+        +   '<input type="text" class="f-vcompany" value="' + escH(v.company) + '" placeholder="Company name" style="width:50%;min-width:120px;flex:0 0 auto" />'
+        +   '<div style="display:flex;gap:6px;flex-wrap:nowrap">'
+        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="copyVendorURL(\'' + ec + '\', this)">Get URL</button>'
+        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="window.open(\'' + escH(getOrderFormURL(v.code)) + '\', \'_blank\')">Test URL</button>'
+        +     '<button class="btn btn-danger"    style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="deleteVendor(\'' + ec + '\')">Delete</button>'
         +   '</div>'
-        + '</td>'
+        + '</div></td>'
         + '</tr>';
     }
 
@@ -777,10 +793,10 @@
       return '<tr class="store-contact-row" data-vendor="' + vc + '" data-store="' + sc + '">'
         + '<td style="width:36px"></td>'
         + '<td style="padding-left:30px"><span class="store-code-badge">' + sc + '</span></td>'
-        + '<td>'
-        +   '<div style="font-weight:600">' + escH(s.firstName) + ' ' + escH(s.lastName) + '</div>'
-        +   '<div style="font-size:.78rem;color:var(--muted)">' + escH(s.email) + '</div>'
-        + '</td>'
+        + '<td colspan="2"><div style="display:flex;align-items:center;gap:16px">'
+        +   '<span style="font-weight:600">' + escH(s.firstName) + ' ' + escH(s.lastName) + '</span>'
+        +   '<span style="font-size:.78rem;color:var(--muted)">' + escH(s.email) + '</span>'
+        + '</div></td>'
         + '<td style="white-space:nowrap">'
         +   '<div style="display:flex;gap:6px">'
         +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px"'
@@ -1015,6 +1031,7 @@
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
+        toast('Saved', 'success');
       } catch (err) {
         toast('Save failed: ' + err.message, 'error');
         setStatus('error', 'Save failed: ' + err.message);
@@ -1068,7 +1085,7 @@
         const raw  = (Array.isArray(data) && data.length > 0) ? data : DEFAULTS;
         allProducts = raw.map((p, i) => ({
           ...p,
-          id:            i + 1,
+          id:            p.id || (i + 1),
           srp:           Number(p.srp),
           wholesale:     Number(p.wholesale),
           unitsPerOrder: Number(p.unitsPerOrder),
@@ -1344,15 +1361,29 @@
        ORDERS
     ════════════════════════════════════════════════════════ */
     let allOrders = [];
+    const expandedOrderGroups = new Set();
 
     async function loadOrders() {
-      setOrdersStatus('loading', 'Loading orders…');
+      setOrdersStatus('loading', 'Loading orders\u2026');
       try {
-        const res  = await fetch(`${WEBHOOK}?action=getOrders`);
-        const data = await res.json();
-        allOrders  = Array.isArray(data) ? data : [];
+        const [ordRes, storeRes] = await Promise.all([
+          fetch(WEBHOOK + '?action=getOrders'),
+          fetch(WEBHOOK + '?action=getStoreContacts'),
+        ]);
+        const ordData   = await ordRes.json();
+        const storeData = await storeRes.json();
+        allOrders = Array.isArray(ordData)   ? ordData   : [];
+        const contacts = Array.isArray(storeData) ? storeData : [];
+        // Enrich orders with the contact name from the Vendors/Stores sheet
+        allOrders.forEach(function(o) {
+          const c = contacts.find(function(s) {
+            return (s.storeCode  || '').toUpperCase() === (o.storeCode  || '').toUpperCase()
+                && (s.vendorCode || '').toUpperCase() === (o.vendorCode || '').toUpperCase();
+          });
+          if (c) o.contactName = ((c.firstName || '') + ' ' + (c.lastName || '')).trim();
+        });
         renderOrders();
-        setOrdersStatus('success', `${allOrders.length} order${allOrders.length !== 1 ? 's' : ''} found.`);
+        setOrdersStatus('success', allOrders.length + ' order' + (allOrders.length !== 1 ? 's' : '') + ' found.');
       } catch (err) {
         setOrdersStatus('error', 'Could not load orders: ' + err.message);
       }
@@ -1363,117 +1394,145 @@
       const tbody = document.getElementById('ordersBody');
       tbody.innerHTML = '';
 
-      const visible = showCancelled ? allOrders : allOrders.filter(o => !o.cancelled);
+      const visible = showCancelled ? allOrders : allOrders.filter(function(o) { return !o.cancelled; });
 
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:28px">
-          ${allOrders.length ? 'All orders are cancelled. Check "Show cancelled" to view them.' : 'No orders yet.'}
-        </td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:28px">'
+          + (allOrders.length ? 'All orders are cancelled. Check \u201cShow cancelled\u201d to view them.' : 'No orders yet.')
+          + '</td></tr>';
         return;
       }
 
-      visible.forEach(order => {
-        // Summary row
-        const tr = document.createElement('tr');
-        if (order.cancelled) tr.classList.add('cancelled-row');
-        tr.innerHTML = `
-          <td>
-            <div class="order-id-cell">
-              <button class="expand-btn" onclick="toggleDetail('${order.orderId}')">&#9654;</button>
-              <span class="order-id">${order.orderId}</span>
-            </div>
-          </td>
-          <td class="order-date">${fmtDate(order.date)}</td>
-          <td>
-            ${order.company ? `<div style="font-weight:600;font-size:.82rem">${order.company}</div>` : ''}
-            ${order.storeCode ? `<div style="font-size:.75rem;color:var(--muted)">${order.storeCode}</div>` : ''}
-          </td>
-          <td style="text-align:center">${order.lines.length}</td>
-          <td style="text-align:center">${order.totalOrderUnits}</td>
-          <td style="text-align:center">${order.totalIndividualUnits}</td>
-          <td style="text-align:right" class="order-total">$${Number(order.totalWholesale).toFixed(2)}</td>
-          <td><div class="cb-wrap"><input type="checkbox" class="status-cb" ${order.orderSent       ? 'checked' : ''}
-              onchange="updateStatus('${order.orderId}','orderSent',this.checked)"       /></div></td>
-          <td><div class="cb-wrap"><input type="checkbox" class="status-cb" ${order.invoiceSent     ? 'checked' : ''}
-              onchange="updateStatus('${order.orderId}','invoiceSent',this.checked)"     /></div></td>
-          <td><div class="cb-wrap"><input type="checkbox" class="status-cb" ${order.paymentReceived ? 'checked' : ''}
-              onchange="updateStatus('${order.orderId}','paymentReceived',this.checked)" /></div></td>
-          <td style="text-align:center">
-            ${order.cancelled
-              ? '<span style="font-size:.75rem;color:var(--red);font-weight:600">Cancelled</span>'
-              : `<button class="btn-cancel-order" onclick="cancelOrder('${order.orderId}')">Cancel</button>`
-            }
-          </td>
-        `;
-        tbody.appendChild(tr);
+      // Group orders by company name
+      const groups = [];
+      const groupMap = {};
+      visible.forEach(function(o) {
+        const key = o.company || 'Unknown';
+        if (!groupMap[key]) { groupMap[key] = []; groups.push(key); }
+        groupMap[key].push(o);
+      });
 
-        // Detail row (hidden by default)
-        const detailTr = document.createElement('tr');
-        detailTr.classList.add('detail-row');
-        detailTr.id = 'detail-' + order.orderId;
-        detailTr.style.display = 'none';
-        detailTr.innerHTML = `<td colspan="11">
-          <div class="detail-inner">
-            <div class="order-detail-meta">
-              ${order.company       ? `<span><strong>Store Name:</strong> ${order.company}</span>` : ''}
-              ${order.storeCode     ? `<span><strong>Store Code:</strong> ${order.storeCode}</span>` : ''}
-              ${order.customerEmail ? `<span><strong>Email:</strong> ${order.customerEmail}</span>` : ''}
-            </div>
-            <table>
-              <thead><tr>
-                <th style="text-align:left">Product</th>
-                <th style="text-align:left">SKU</th>
-                <th>Order Qty</th>
-                <th>Total Units</th>
-                <th style="text-align:right">Line Wholesale</th>
-                <th style="text-align:right">Line SRP</th>
-              </tr></thead>
-              <tbody>
-                ${order.lines.map(l => `<tr>
-                  <td style="text-align:left">${l.name}</td>
-                  <td style="text-align:left;font-size:.78rem;color:var(--muted)">${l.sku}</td>
-                  <td style="text-align:center">${l.qty} ${l.orderUnit}${l.qty !== 1 ? 's' : ''}</td>
-                  <td style="text-align:center">${l.units}</td>
-                  <td style="text-align:right">$${Number(l.lineWholesale).toFixed(2)}</td>
-                  <td style="text-align:right">$${Number(l.lineSRP).toFixed(2)}</td>
-                </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </td>`;
-        tbody.appendChild(detailTr);
+      groups.forEach(function(company) {
+        const orders   = groupMap[company];
+        const expanded = expandedOrderGroups.has(company);
+        const total    = orders.reduce(function(s, o) { return s + Number(o.totalWholesale || 0); }, 0);
+
+        // ── Group header row ──────────────────────────────
+        const groupTr = document.createElement('tr');
+        groupTr.className = 'order-group-row';
+        groupTr.innerHTML = '<td colspan="10">'
+          + '<span class="order-group-arrow' + (expanded ? ' open' : '') + '">&#9654;</span>'
+          + escH(company)
+          + '<span class="order-group-meta">' + orders.length + ' order' + (orders.length !== 1 ? 's' : '') + '</span>'
+          + '<span class="order-group-total"> &nbsp;&middot;&nbsp; $' + total.toFixed(2) + '</span>'
+          + '</td>';
+        groupTr.onclick = function() { toggleOrderGroup(company); };
+        tbody.appendChild(groupTr);
+
+        // ── Order rows (visible only when group expanded) ─
+        orders.forEach(function(order) {
+          const sc   = order.storeCode ? '<span class="store-code-badge">' + escH(order.storeCode) + '</span>' : '<span style="color:var(--muted);font-size:.75rem">\u2014</span>';
+          const co   = escH(order.company || '');
+          const oid  = order.orderId;
+
+          const tr = document.createElement('tr');
+          tr.className = 'order-row' + (order.cancelled ? ' cancelled-row' : '');
+          tr.dataset.group = company;
+          tr.style.display = expanded ? '' : 'none';
+          tr.innerHTML =
+            '<td style="text-align:center;padding:0 4px">'
+            +   '<button class="expand-btn" onclick="toggleDetail(\'' + oid + '\')">&#9654;</button>'
+            + '</td>'
+            + '<td><span class="order-id">' + oid + '</span></td>'
+            + '<td style="font-size:.82rem">' + co + '</td>'
+            + '<td>' + sc + '</td>'
+            + '<td style="text-align:center">' + (order.totalIndividualUnits || '\u2014') + '</td>'
+            + '<td style="text-align:right" class="order-total">$' + Number(order.totalWholesale).toFixed(2) + '</td>'
+            + '<td><div class="cb-wrap"><input type="checkbox" class="status-cb"' + (order.orderSent       ? ' checked' : '')
+            +   ' onchange="updateStatus(\'' + oid + '\',\'orderSent\',this.checked)" /></div></td>'
+            + '<td><div class="cb-wrap"><input type="checkbox" class="status-cb"' + (order.invoiceSent     ? ' checked' : '')
+            +   ' onchange="updateStatus(\'' + oid + '\',\'invoiceSent\',this.checked)" /></div></td>'
+            + '<td><div class="cb-wrap"><input type="checkbox" class="status-cb"' + (order.paymentReceived ? ' checked' : '')
+            +   ' onchange="updateStatus(\'' + oid + '\',\'paymentReceived\',this.checked)" /></div></td>'
+            + '<td style="text-align:center">'
+            + (order.cancelled
+                ? '<span style="font-size:.74rem;color:var(--red);font-weight:600">Cancelled</span>'
+                : '<button class="btn-cancel-order" onclick="cancelOrder(\'' + oid + '\')">Cancel</button>'
+              )
+            + '</td>';
+          tbody.appendChild(tr);
+
+          // ── Detail row (hidden; toggled by expand btn) ─
+          const productRows = order.lines.map(function(l) {
+            return '<tr>'
+              + '<td style="text-align:left">'  + escH(l.name) + '</td>'
+              + '<td style="text-align:left;font-size:.78rem;color:var(--muted)">' + escH(l.sku || '') + '</td>'
+              + '<td style="text-align:center">' + l.qty + ' ' + l.orderUnit + (l.qty !== 1 ? 's' : '') + '</td>'
+              + '<td style="text-align:center">' + l.units + '</td>'
+              + '<td style="text-align:right">$' + Number(l.lineWholesale).toFixed(2) + '</td>'
+              + '<td style="text-align:right">$' + Number(l.lineSRP).toFixed(2) + '</td>'
+              + '</tr>';
+          }).join('');
+
+          const detailTr = document.createElement('tr');
+          detailTr.className = 'detail-row';
+          detailTr.id = 'detail-' + oid;
+          detailTr.dataset.group = company;
+          detailTr.style.display = 'none';
+          detailTr.innerHTML = '<td colspan="10"><div class="detail-inner">'
+            + '<div class="order-detail-meta">'
+            + '<span><strong>Date:</strong> '       + fmtDate(order.date) + '</span>'
+            + (order.contactName  ? '<span><strong>Contact:</strong> '    + escH(order.contactName)  + '</span>' : '')
+            + (order.customerEmail? '<span><strong>Email:</strong> '      + escH(order.customerEmail)+ '</span>' : '')
+            + (order.storeCode    ? '<span><strong>Store Code:</strong> ' + escH(order.storeCode)    + '</span>' : '')
+            + '</div>'
+            + '<table><thead><tr>'
+            + '<th style="text-align:left">Product</th>'
+            + '<th style="text-align:left">SKU</th>'
+            + '<th>Order Qty</th><th>Total Units</th>'
+            + '<th style="text-align:right">Line Wholesale</th>'
+            + '<th style="text-align:right">Line SRP</th>'
+            + '</tr></thead><tbody>' + productRows + '</tbody></table>'
+            + '</div></td>';
+          tbody.appendChild(detailTr);
+        });
       });
     }
 
+    function toggleOrderGroup(company) {
+      expandedOrderGroups.has(company) ? expandedOrderGroups.delete(company) : expandedOrderGroups.add(company);
+      renderOrders();
+    }
+
     function toggleDetail(orderId) {
-      const row = document.getElementById('detail-' + orderId);
-      const btn = row.previousElementSibling.querySelector('.expand-btn');
-      const open = row.style.display !== 'none';
-      row.style.display = open ? 'none' : 'table-row';
-      btn.textContent   = open ? '▶' : '▼';
+      const detailRow = document.getElementById('detail-' + orderId);
+      const orderRow  = detailRow.previousElementSibling;
+      const btn       = orderRow.querySelector('.expand-btn');
+      const open      = detailRow.style.display !== 'none';
+      detailRow.style.display = open ? 'none' : 'table-row';
+      btn.innerHTML           = open ? '&#9654;' : '&#9660;';
     }
 
     async function updateStatus(orderId, field, value) {
       try {
         const payload = JSON.stringify({ orderId, field, value });
-        const url     = `${WEBHOOK}?action=updateOrderStatus&payload=${encodeURIComponent(payload)}`;
+        const url     = WEBHOOK + '?action=updateOrderStatus&payload=' + encodeURIComponent(payload);
         const res     = await fetch(url);
         const data    = await res.json();
         if (data.status !== 'ok') throw new Error(data.message);
-        // Update local state
-        const order = allOrders.find(o => o.orderId === orderId);
+        const order = allOrders.find(function(o) { return o.orderId === orderId; });
         if (order) order[field] = value;
         toast('Saved', 'success');
       } catch (err) {
         toast('Save failed: ' + err.message, 'error');
-        loadOrders(); // revert display
+        loadOrders();
       }
     }
 
     async function cancelOrder(orderId) {
-      if (!confirm(`Cancel order ${orderId}?\n\nThis will flag it in the spreadsheet. It will no longer appear in the default orders view.`)) return;
+      if (!confirm('Cancel order ' + orderId + '?\n\nThis will flag it in the spreadsheet and hide it from the default view.')) return;
       await updateStatus(orderId, 'cancelled', true);
-      const order = allOrders.find(o => o.orderId === orderId);
+      const order = allOrders.find(function(o) { return o.orderId === orderId; });
       if (order) order.cancelled = true;
       renderOrders();
       toast('Order cancelled.', 'success');
