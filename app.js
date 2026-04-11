@@ -479,12 +479,6 @@ function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, tot
   `).join('');
 
   return `
-    <div class="dialog-order-meta">
-      ${vendor && vendor.company                           ? `<div class="dom-row"><span class="dom-label">Store Name</span><span class="dom-value">${vendor.company}</span></div>` : ''}
-      ${storeCode                                          ? `<div class="dom-row"><span class="dom-label">Store Code</span><span class="dom-value">${storeCode}</span></div>` : ''}
-      ${currentStore && currentStore.firstName             ? `<div class="dom-row"><span class="dom-label">Contact</span><span class="dom-value">${currentStore.firstName} ${currentStore.lastName}</span></div>` : ''}
-      ${customerEmail                                      ? `<div class="dom-row"><span class="dom-label">Confirmation sent to</span><span class="dom-value">${customerEmail}</span></div>` : ''}
-    </div>
     <table>
       <thead>
         <tr>
