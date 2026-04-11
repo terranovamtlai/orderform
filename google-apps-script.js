@@ -10,7 +10,7 @@
  *   orderform
  */
 
-const ORDER_EMAIL       = 'terranova.tonyz@gmail.com';
+const ORDER_EMAIL       = 'jayem+ordertest@gmail.com';
 const SPREADSHEET_ID    = '10H9CTzRHUGK6SrukXklahr0ebQvJR8bueNL8VZEmses';
 const ORDERS_SHEET      = 'Orders';
 const PRODUCTS_SHEET    = 'Products';

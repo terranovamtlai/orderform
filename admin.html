@@ -502,8 +502,7 @@
               <tr>
                 <th style="width:36px"></th>
                 <th style="width:160px">Code</th>
-                <th>Company Name</th>
-                <th style="width:230px">Actions</th>
+                <th colspan="2">Company Name / Details</th>
               </tr>
             </thead>
             <tbody id="vendorBody"></tbody>
@@ -745,7 +744,7 @@
       }
       const rows = [];
       allVendors.forEach(function(v) {
-        const stores   = allStoreContacts.filter(s => (s.vendorCode || '').toUpperCase() === v.code.toUpperCase());
+        const stores   = allStoreContacts.filter(s => String(s.vendorCode || '').toUpperCase() === String(v.code || '').toUpperCase());
         const expanded = expandedVendors.has(v.code);
         rows.push(makeVendorRow(v, stores, expanded));
         if (expanded) {
@@ -810,8 +809,8 @@
 
     function editStoreContact(vendorCode, storeCode) {
       const store = allStoreContacts.find(function(s) {
-        return (s.vendorCode || '').toUpperCase() === vendorCode.toUpperCase()
-            && (s.storeCode  || '').toUpperCase() === storeCode.toUpperCase();
+        return String(s.vendorCode || '').toUpperCase() === String(vendorCode || '').toUpperCase()
+            && String(s.storeCode  || '').toUpperCase() === String(storeCode  || '').toUpperCase();
       });
       if (!store) return;
       const row = document.querySelector('.store-contact-row[data-vendor="' + vendorCode + '"][data-store="' + storeCode + '"]');
@@ -865,8 +864,8 @@
         if (data.status !== 'ok') throw new Error(data.message || 'Error');
         // Update in memory
         const idx = allStoreContacts.findIndex(function(s) {
-          return (s.vendorCode || '').toUpperCase() === vendorCode.toUpperCase()
-              && (s.storeCode  || '').toUpperCase() === oldStoreCode.toUpperCase();
+          return String(s.vendorCode || '').toUpperCase() === String(vendorCode    || '').toUpperCase()
+              && String(s.storeCode  || '').toUpperCase() === String(oldStoreCode || '').toUpperCase();
         });
         const updated = { vendorCode, company, storeCode: newCode, firstName, lastName, email };
         if (idx >= 0) allStoreContacts[idx] = updated; else allStoreContacts.push(updated);
@@ -885,8 +884,8 @@
         const data = await res.json();
         if (data.status !== 'ok') throw new Error(data.message || 'Error');
         allStoreContacts = allStoreContacts.filter(function(s) {
-          return !((s.vendorCode || '').toUpperCase() === vendorCode.toUpperCase()
-                && (s.storeCode  || '').toUpperCase() === storeCode.toUpperCase());
+          return !(String(s.vendorCode || '').toUpperCase() === String(vendorCode || '').toUpperCase()
+                && String(s.storeCode  || '').toUpperCase() === String(storeCode  || '').toUpperCase());
         });
         toast('Store contact deleted.', 'success');
         renderVendorTable();
@@ -1377,8 +1376,8 @@
         // Enrich orders with the contact name from the Vendors/Stores sheet
         allOrders.forEach(function(o) {
           const c = contacts.find(function(s) {
-            return (s.storeCode  || '').toUpperCase() === (o.storeCode  || '').toUpperCase()
-                && (s.vendorCode || '').toUpperCase() === (o.vendorCode || '').toUpperCase();
+            return String(s.storeCode  || '').toUpperCase() === String(o.storeCode  || '').toUpperCase()
+                && String(s.vendorCode || '').toUpperCase() === String(o.vendorCode || '').toUpperCase();
           });
           if (c) o.contactName = ((c.firstName || '') + ' ' + (c.lastName || '')).trim();
         });
