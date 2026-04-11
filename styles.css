@@ -488,10 +488,9 @@ body {
   color: rgba(255,255,255,.7);
   white-space: nowrap;
 }
-.dhm-item + .dhm-item::before {
-  content: '·';
-  margin-right: 10px;
-  opacity: .45;
+.dhm-item + .dhm-item {
+  border-left: 1px solid rgba(255,255,255,.25);
+  padding-left: 10px;
 }
 .dialog-close {
   background: none;
