@@ -20,7 +20,8 @@ let products = [];
    ORDER STATE  { productId: quantity }
    ============================================================ */
 const order = {};
-let vendor  = null;
+let vendor       = null;
+let currentStore = null;
 
 /* ============================================================
    HELPERS
@@ -244,6 +245,188 @@ document.getElementById('btnClear').addEventListener('click', () => {
 });
 
 /* ============================================================
+   STORE IDENTIFICATION FLOW
+   ============================================================ */
+
+async function lookupStoreAPI(code) {
+  const res = await fetch(`${SHEETS_WEBHOOK_URL}?action=lookupStore&code=${encodeURIComponent(code)}`);
+  return res.json();
+}
+
+async function saveStoreAPI(storeData) {
+  const url = SHEETS_WEBHOOK_URL + '?action=saveStore&payload=' + encodeURIComponent(JSON.stringify(storeData));
+  const res = await fetch(url);
+  return res.json();
+}
+
+/** Main orchestrator — loops until currentStore is set. */
+async function initStoreFlow() {
+  while (!currentStore) {
+    const { code, lookupResult } = await showStoreCodeInput();
+
+    if (lookupResult.status === 'ok' && lookupResult.email) {
+      const confirmed = await showStoreConfirmDialog(lookupResult);
+      if (confirmed) currentStore = lookupResult;
+      // else: not me — loop back to code input
+    } else {
+      const registered = await showStoreRegisterDialog(code, lookupResult);
+      if (registered) currentStore = registered;
+      // else: back pressed — loop back to code input
+    }
+  }
+
+  // Show store info bar in order panel
+  document.getElementById('storeInfoName').textContent =
+    currentStore.firstName + ' ' + currentStore.lastName + ' — ' + currentStore.code;
+  document.getElementById('storeInfoBar').hidden = false;
+}
+
+/** Step 1: store code input dialog. Resolves { code, lookupResult }. */
+function showStoreCodeInput(prefill) {
+  return new Promise(resolve => {
+    const dialog  = document.getElementById('storeDialog');
+    const input   = document.getElementById('storeCodeInput');
+    const errorEl = document.getElementById('storeDialogError');
+    const btn     = document.getElementById('btnStoreLookup');
+
+    input.value     = prefill || '';
+    errorEl.hidden  = true;
+    btn.disabled    = false;
+    btn.textContent = 'Continue \u2192';
+
+    const ac = new AbortController();
+
+    async function attempt() {
+      const code = input.value.trim().toUpperCase();
+      if (!code) {
+        errorEl.textContent = 'Please enter your store code.';
+        errorEl.hidden = false;
+        return;
+      }
+      btn.disabled    = true;
+      btn.textContent = 'Looking up\u2026';
+      errorEl.hidden  = true;
+      try {
+        const data = await lookupStoreAPI(code);
+        ac.abort();
+        dialog.close();
+        resolve({ code, lookupResult: data });
+      } catch (_) {
+        errorEl.textContent = 'Could not connect. Please try again.';
+        errorEl.hidden  = false;
+        btn.disabled    = false;
+        btn.textContent = 'Continue \u2192';
+      }
+    }
+
+    btn.addEventListener('click', attempt, { signal: ac.signal });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') attempt(); }, { signal: ac.signal });
+    dialog.addEventListener('cancel', e => e.preventDefault(), { signal: ac.signal });
+
+    if (!dialog.open) dialog.showModal();
+    setTimeout(() => input.focus(), 50);
+  });
+}
+
+/** Step 2a: confirm existing store. Resolves true (confirmed) or false (not me). */
+function showStoreConfirmDialog(storeData) {
+  return new Promise(resolve => {
+    const dialog   = document.getElementById('storeConfirmDialog');
+    const infoEl   = document.getElementById('storeConfirmInfo');
+    const btnYes   = document.getElementById('btnStoreYes');
+    const btnNotMe = document.getElementById('btnStoreNotMe');
+
+    infoEl.innerHTML =
+      '<div class="store-confirm-name">' + storeData.firstName + ' ' + storeData.lastName + '</div>' +
+      '<div class="store-confirm-email">' + storeData.email + '</div>';
+
+    const ac = new AbortController();
+    function done(v) { ac.abort(); dialog.close(); resolve(v); }
+
+    btnYes.addEventListener('click',   () => done(true),  { signal: ac.signal });
+    btnNotMe.addEventListener('click', () => done(false), { signal: ac.signal });
+    dialog.addEventListener('cancel',  e => e.preventDefault(), { signal: ac.signal });
+
+    dialog.showModal();
+  });
+}
+
+/** Step 2b: register new store. Resolves store object or null (back). */
+function showStoreRegisterDialog(prefillCode, existing) {
+  return new Promise(resolve => {
+    const dialog    = document.getElementById('storeRegisterDialog');
+    const errorEl   = document.getElementById('storeRegisterError');
+    const submitBtn = document.getElementById('btnRegisterSubmit');
+    const backBtn   = document.getElementById('btnRegisterBack');
+
+    document.getElementById('regStoreCode').value    = prefillCode || '';
+    document.getElementById('regFirstName').value    = (existing && existing.firstName) || '';
+    document.getElementById('regLastName').value     = (existing && existing.lastName)  || '';
+    document.getElementById('regEmail').value        = (existing && existing.email)     || '';
+    document.getElementById('regConfirmEmail').value = '';
+    errorEl.hidden      = true;
+    submitBtn.disabled  = false;
+    submitBtn.textContent = 'Register & Continue \u2192';
+
+    const ac = new AbortController();
+    function abort() { ac.abort(); dialog.close(); }
+
+    async function handleSubmit() {
+      const firstName    = document.getElementById('regFirstName').value.trim();
+      const lastName     = document.getElementById('regLastName').value.trim();
+      const email        = document.getElementById('regEmail').value.trim();
+      const confirmEmail = document.getElementById('regConfirmEmail').value.trim();
+      const code         = document.getElementById('regStoreCode').value.trim().toUpperCase();
+
+      if (!firstName || !lastName || !email || !code) {
+        errorEl.textContent = 'Please fill in all required fields.';
+        errorEl.hidden = false;
+        return;
+      }
+      if (!confirmEmail) {
+        errorEl.textContent = 'Please confirm your email address.';
+        errorEl.hidden = false;
+        return;
+      }
+      if (email.toLowerCase() !== confirmEmail.toLowerCase()) {
+        errorEl.textContent = 'Email addresses do not match.';
+        errorEl.hidden = false;
+        return;
+      }
+
+      submitBtn.disabled    = true;
+      submitBtn.textContent = 'Saving\u2026';
+      errorEl.hidden = true;
+
+      try {
+        await saveStoreAPI({ code, firstName, lastName, email });
+        abort();
+        resolve({ code, firstName, lastName, email, status: 'ok' });
+      } catch (_) {
+        errorEl.textContent   = 'Could not save. Please try again.';
+        errorEl.hidden        = false;
+        submitBtn.disabled    = false;
+        submitBtn.textContent = 'Register & Continue \u2192';
+      }
+    }
+
+    submitBtn.addEventListener('click', handleSubmit, { signal: ac.signal });
+    backBtn.addEventListener('click', () => { abort(); resolve(null); }, { signal: ac.signal });
+    dialog.addEventListener('cancel', e => e.preventDefault(), { signal: ac.signal });
+
+    dialog.showModal();
+    setTimeout(() => document.getElementById('regFirstName').focus(), 50);
+  });
+}
+
+/** "Switch store" button — re-runs identification flow. */
+document.getElementById('btnSwitchStore').addEventListener('click', async () => {
+  currentStore = null;
+  document.getElementById('storeInfoBar').hidden = true;
+  await initStoreFlow();
+});
+
+/* ============================================================
    ORDER DATA HELPERS
    ============================================================ */
 
@@ -283,9 +466,10 @@ function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, tot
 
   return `
     <div class="dialog-order-meta">
-      ${vendor && vendor.company ? `<div class="dom-row"><span class="dom-label">Store Name</span><span class="dom-value">${vendor.company}</span></div>` : ''}
-      ${storeCode                ? `<div class="dom-row"><span class="dom-label">Store Code</span><span class="dom-value">${storeCode}</span></div>` : ''}
-      ${customerEmail            ? `<div class="dom-row"><span class="dom-label">Confirmation sent to</span><span class="dom-value">${customerEmail}</span></div>` : ''}
+      ${vendor && vendor.company                           ? `<div class="dom-row"><span class="dom-label">Store Name</span><span class="dom-value">${vendor.company}</span></div>` : ''}
+      ${currentStore && currentStore.firstName             ? `<div class="dom-row"><span class="dom-label">Contact</span><span class="dom-value">${currentStore.firstName} ${currentStore.lastName}</span></div>` : ''}
+      ${storeCode                                          ? `<div class="dom-row"><span class="dom-label">Store Code</span><span class="dom-value">${storeCode}</span></div>` : ''}
+      ${customerEmail                                      ? `<div class="dom-row"><span class="dom-label">Confirmation sent to</span><span class="dom-value">${customerEmail}</span></div>` : ''}
     </div>
     <table>
       <thead>
@@ -316,34 +500,10 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
   const data = buildOrderData();
   if (!data.lines.length) return;
 
-  // Validate customer fields
-  const storeCode     = document.getElementById('storeCode').value.trim();
-  const customerEmail = document.getElementById('customerEmail').value.trim();
-  const confirmEmail  = document.getElementById('confirmEmail').value.trim();
-  const errorEl       = document.getElementById('customerError');
+  if (!currentStore) return; // store identification required (shouldn't normally reach here)
 
-  if (!storeCode) {
-    errorEl.textContent = 'Please enter your store code.';
-    errorEl.hidden = false;
-    document.getElementById('storeCode').focus();
-    return;
-  }
-  if (!customerEmail) {
-    errorEl.textContent = 'Please enter your email address.';
-    errorEl.hidden = false;
-    document.getElementById('customerEmail').focus();
-    return;
-  }
-  if (customerEmail.toLowerCase() !== confirmEmail.toLowerCase()) {
-    errorEl.textContent = 'Email addresses do not match. Please check and try again.';
-    errorEl.hidden = false;
-    document.getElementById('confirmEmail').focus();
-    return;
-  }
-  errorEl.hidden = true;
-
-  data.storeCode     = storeCode;
-  data.customerEmail = customerEmail;
+  data.storeCode     = currentStore.code;
+  data.customerEmail = currentStore.email;
 
   // Populate body
   document.getElementById('dialogBody').innerHTML = buildDialogBodyHTML(data);
@@ -380,8 +540,8 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
 
   // Snapshot order data before clearing
   confirmedOrder = buildOrderData();
-  confirmedOrder.storeCode     = document.getElementById('storeCode').value.trim();
-  confirmedOrder.customerEmail = document.getElementById('customerEmail').value.trim();
+  confirmedOrder.storeCode     = currentStore ? currentStore.code  : '';
+  confirmedOrder.customerEmail = currentStore ? currentStore.email : '';
 
   // Show submitting state in dialog
   document.getElementById('dialogTitle').textContent = 'Submitting Order…';
@@ -646,6 +806,10 @@ async function init() {
     showCatalogueError('Could not load products. Please check your connection and try again.');
     return;
   }
+
+  // Identify the store before showing the catalogue
+  await initStoreFlow();
+
   renderProducts();
   updateSummary();
 }

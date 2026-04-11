@@ -82,20 +82,9 @@
           </div>
         </div>
 
-        <div class="customer-info">
-          <div class="customer-field">
-            <label for="storeCode">Store Code</label>
-            <input type="text" id="storeCode" placeholder="Your store code" autocomplete="off" />
-          </div>
-          <div class="customer-field">
-            <label for="customerEmail">Email Address</label>
-            <input type="email" id="customerEmail" placeholder="your@email.com" autocomplete="email" />
-          </div>
-          <div class="customer-field">
-            <label for="confirmEmail">Confirm Email</label>
-            <input type="email" id="confirmEmail" placeholder="Confirm your email" autocomplete="email" />
-          </div>
-          <div class="customer-error" id="customerError" hidden></div>
+        <div class="store-info-bar" id="storeInfoBar" hidden>
+          <span id="storeInfoName"></span>
+          <button class="btn-switch-store" id="btnSwitchStore">Switch</button>
         </div>
 
         <button class="btn-submit" id="btnSubmit" hidden>Submit Order &rarr;</button>
@@ -130,6 +119,76 @@
     <!-- Footer: confirmed state -->
     <div class="dialog-foot" id="footConfirmed" hidden>
       <button class="btn-new-order" id="btnNewOrder">Start New Order</button>
+    </div>
+  </dialog>
+
+  <!-- Store: code entry -->
+  <dialog class="store-dialog" id="storeDialog">
+    <div class="dialog-head">
+      <h2>Welcome to Terra Nova</h2>
+    </div>
+    <div class="store-dialog-body">
+      <p>Please enter your store code to continue.</p>
+      <div class="store-field">
+        <label for="storeCodeInput">Store Code</label>
+        <input type="text" id="storeCodeInput" placeholder="e.g. MYSTORE01" autocomplete="off" />
+      </div>
+      <div class="store-dialog-error" id="storeDialogError" hidden></div>
+    </div>
+    <div class="dialog-foot" style="justify-content:flex-end">
+      <button class="btn-confirm-submit" id="btnStoreLookup">Continue &rarr;</button>
+    </div>
+  </dialog>
+
+  <!-- Store: confirm existing -->
+  <dialog class="store-dialog" id="storeConfirmDialog">
+    <div class="dialog-head">
+      <h2>Is This You?</h2>
+    </div>
+    <div class="store-dialog-body">
+      <p>We found an account for that store code:</p>
+      <div class="store-confirm-info" id="storeConfirmInfo"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn-cancel-order" id="btnStoreNotMe">That&rsquo;s not me</button>
+      <button class="btn-confirm-submit" id="btnStoreYes">Yes, continue &rarr;</button>
+    </div>
+  </dialog>
+
+  <!-- Store: register new -->
+  <dialog class="store-dialog" id="storeRegisterDialog">
+    <div class="dialog-head">
+      <h2>Set Up Your Store</h2>
+    </div>
+    <div class="store-dialog-body">
+      <p>Please fill in your details to continue.</p>
+      <div class="store-fields-grid">
+        <div class="store-field">
+          <label for="regFirstName">First Name</label>
+          <input type="text" id="regFirstName" placeholder="Jane" autocomplete="given-name" />
+        </div>
+        <div class="store-field">
+          <label for="regLastName">Last Name</label>
+          <input type="text" id="regLastName" placeholder="Smith" autocomplete="family-name" />
+        </div>
+      </div>
+      <div class="store-field">
+        <label for="regEmail">Email Address</label>
+        <input type="email" id="regEmail" placeholder="jane@mystore.com" autocomplete="email" />
+      </div>
+      <div class="store-field">
+        <label for="regConfirmEmail">Confirm Email</label>
+        <input type="email" id="regConfirmEmail" placeholder="Confirm your email" autocomplete="email" />
+      </div>
+      <div class="store-field">
+        <label for="regStoreCode">Store Code</label>
+        <input type="text" id="regStoreCode" placeholder="Your store code" autocomplete="off" />
+      </div>
+      <div class="store-dialog-error" id="storeRegisterError" hidden></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn-cancel-order" id="btnRegisterBack">Back</button>
+      <button class="btn-confirm-submit" id="btnRegisterSubmit">Register &amp; Continue &rarr;</button>
     </div>
   </dialog>
 

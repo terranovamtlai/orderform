@@ -59,6 +59,8 @@ function doGet(e) {
     else if (action === 'getVendor')         return handleGetVendor(e);
     else if (action === 'getVendors')        return handleGetVendors();
     else if (action === 'saveVendors')       return handleSaveVendors(e);
+    else if (action === 'lookupStore')       return handleLookupStore(e);
+    else if (action === 'saveStore')         return handleSaveStore(e);
     else                                     return handleSubmitOrder(e);
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
@@ -421,12 +423,103 @@ function handleSaveVendors(e) {
   var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(VENDORS_SHEET);
   if (!sheet) sheet = ss.insertSheet(VENDORS_SHEET);
+
+  // Preserve existing contact data (firstName/lastName/email) keyed by code
+  var contactMap = {};
+  if (sheet.getLastRow() >= 2) {
+    var existing = sheet.getDataRange().getValues();
+    for (var i = 1; i < existing.length; i++) {
+      var key = String(existing[i][0]).trim().toUpperCase();
+      if (key) contactMap[key] = [existing[i][2] || '', existing[i][3] || '', existing[i][4] || ''];
+    }
+  }
+
   sheet.clearContents();
-  sheet.appendRow(['code', 'company']);
-  sheet.getRange(1, 1, 1, 2).setFontWeight('bold');
+  sheet.appendRow(['code', 'company', 'firstName', 'lastName', 'email']);
+  sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
   sheet.setFrozenRows(1);
-  vendors.forEach(function(v) { sheet.appendRow([v.code, v.company]); });
+  vendors.forEach(function(v) {
+    var key     = String(v.code || '').trim().toUpperCase();
+    var contact = contactMap[key] || ['', '', ''];
+    sheet.appendRow([v.code, v.company, contact[0], contact[1], contact[2]]);
+  });
   return json({ status: 'ok', saved: vendors.length });
+}
+
+/* ── Store contact lookup & save ────────────────────────── */
+
+/**
+ * lookupStore — find a row in Vendors by store code.
+ * Returns { status:'ok', code, company, firstName, lastName, email }
+ * or      { status:'notfound' }
+ *
+ * Vendors sheet columns: code | company | firstName | lastName | email
+ */
+function handleLookupStore(e) {
+  var code  = ((e.parameter && e.parameter.code) || '').trim().toUpperCase();
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(VENDORS_SHEET);
+  if (!sheet || sheet.getLastRow() < 2) return json({ status: 'notfound' });
+
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim().toUpperCase() === code) {
+      return json({
+        status:    'ok',
+        code:      rows[i][0] || '',
+        company:   rows[i][1] || '',
+        firstName: rows[i][2] || '',
+        lastName:  rows[i][3] || '',
+        email:     rows[i][4] || '',
+      });
+    }
+  }
+  return json({ status: 'notfound' });
+}
+
+/**
+ * saveStore — upsert a Vendors row with contact details.
+ * Payload: { code, firstName, lastName, email }
+ * Adds the row if code is new; updates firstName/lastName/email if it exists.
+ * company is preserved on update (only set on insert if provided).
+ */
+function handleSaveStore(e) {
+  var data  = JSON.parse(e.parameter.payload);
+  var code  = String(data.code || '').trim().toUpperCase();
+  if (!code) return json({ status: 'error', message: 'Missing code' });
+
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(VENDORS_SHEET);
+  if (!sheet) sheet = ss.insertSheet(VENDORS_SHEET);
+
+  // Ensure headers exist (code | company | firstName | lastName | email)
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['code', 'company', 'firstName', 'lastName', 'email']);
+    sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim().toUpperCase() === code) {
+      // Update contact columns only; preserve code & company
+      sheet.getRange(i + 1, 3, 1, 3).setValues([[
+        data.firstName || '',
+        data.lastName  || '',
+        data.email     || '',
+      ]]);
+      return json({ status: 'ok', action: 'updated' });
+    }
+  }
+  // New row
+  sheet.appendRow([
+    code,
+    data.company   || '',
+    data.firstName || '',
+    data.lastName  || '',
+    data.email     || '',
+  ]);
+  return json({ status: 'ok', action: 'inserted' });
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */
