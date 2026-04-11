@@ -295,7 +295,7 @@ function showStoreCodeInput(company, prefill) {
     const errorEl = document.getElementById('storeDialogError');
     const btn     = document.getElementById('btnStoreLookup');
 
-    document.getElementById('storeDialogSub').textContent = company || '';
+    document.getElementById('storeDialogSub').textContent = company ? company + '!' : '';
     input.value     = prefill || '';
     errorEl.hidden  = true;
     btn.disabled    = false;

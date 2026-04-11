@@ -773,11 +773,20 @@ body {
   width: min(460px, 95vw);
   box-shadow: 0 20px 50px rgba(0,0,0,.25);
   overflow: hidden;
-  margin: auto;
-  top: 50%;
-  transform: translateY(-50%);
+  /* sit at ~1/4 from the top of the viewport */
+  top: 15vh;
+  margin: 0 auto;
+  transform: none;
 }
 .store-dialog::backdrop { background: rgba(0,0,0,.6); }
+.store-dialog .dialog-head { padding: 18px 22px 20px; }
+.store-dialog .dialog-head h2 {
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: rgba(255,255,255,.65);
+}
 .store-dialog-body {
   padding: 20px 20px 4px;
   display: flex;
@@ -842,10 +851,12 @@ body {
 .store-confirm-code    { font-size: .78rem; color: var(--muted); }
 
 .dialog-head-sub {
-  font-size: .8rem;
-  color: rgba(255,255,255,.65);
-  margin-top: 2px;
-  font-weight: 400;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin-top: 4px;
 }
 
 .store-field-readonly {
