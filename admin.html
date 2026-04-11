@@ -255,6 +255,41 @@
     .show-cancelled-wrap { font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
     .show-cancelled-wrap input { width: auto; }
 
+    /* ── Vendor expand / store contact rows ── */
+    .vendor-expand-btn {
+      background: none; border: none; color: var(--navy);
+      cursor: pointer; font-size: .72rem; padding: 2px 5px;
+      line-height: 1; opacity: .55; transition: opacity .1s, transform .15s;
+      display: inline-block;
+    }
+    .vendor-expand-btn:hover { opacity: 1; }
+    .vendor-expand-btn.open  { opacity: 1; transform: rotate(90deg); }
+    .store-count-badge {
+      display: inline-block; background: var(--orange); color: #fff;
+      border-radius: 10px; padding: 1px 7px; font-size: .7rem;
+      font-weight: 700; margin-left: 6px; vertical-align: middle;
+    }
+    .store-contact-row td {
+      background: #f4f7fb;
+      border-bottom: 1px solid #e8edf4;
+      font-size: .83rem;
+    }
+    .store-contact-row:hover td { background: #eaeff8; }
+    .store-contact-row td:first-child {
+      border-left: 3px solid var(--orange);
+    }
+    .store-code-badge {
+      font-family: 'Courier New', monospace; font-size: .78rem; font-weight: 700;
+      color: var(--navy); background: #eef2ff;
+      border: 1px solid #c7d2fe; border-radius: 4px; padding: 2px 7px;
+    }
+    .store-edit-input {
+      padding: 5px 8px; border: 1px solid var(--border); border-radius: 4px;
+      font-size: .83rem; font-family: inherit; color: var(--text);
+      background: #fff; outline: none;
+    }
+    .store-edit-input:focus { border-color: var(--navy); }
+
     /* ── Category sections (Products tab) ── */
     .cat-section { margin-bottom: 28px; }
     .cat-header {
@@ -449,9 +484,10 @@
           <table>
             <thead>
               <tr>
-                <th style="width:130px">Code</th>
+                <th style="width:36px"></th>
+                <th style="width:160px">Code</th>
                 <th>Company Name</th>
-                <th style="width:160px">Actions</th>
+                <th style="width:230px">Actions</th>
               </tr>
             </thead>
             <tbody id="vendorBody"></tbody>
@@ -642,7 +678,13 @@
     /* ════════════════════════════════════════════════════════
        VENDORS
     ════════════════════════════════════════════════════════ */
-    let allVendors = [];
+    let allVendors       = [];
+    let allStoreContacts = [];
+    const expandedVendors = new Set();
+
+    function escH(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
 
     function generateCode() {
       return Math.random().toString(36).substr(2, 8).toUpperCase();
@@ -661,8 +703,12 @@
     async function loadVendors() {
       setVendorStatus('loading', 'Loading vendors\u2026');
       try {
-        const res = await fetch(`${WEBHOOK}?action=getVendors`);
-        allVendors = await res.json();
+        const [vRes, sRes] = await Promise.all([
+          fetch(`${WEBHOOK}?action=getVendors`),
+          fetch(`${WEBHOOK}?action=getStoreContacts`),
+        ]);
+        allVendors       = await vRes.json();
+        allStoreContacts = await sRes.json();
         renderVendorTable();
         setVendorStatus('success', allVendors.length + ' vendor(s) loaded.');
       } catch (err) {
@@ -670,53 +716,198 @@
       }
     }
 
+    function toggleVendorExpand(code) {
+      expandedVendors.has(code) ? expandedVendors.delete(code) : expandedVendors.add(code);
+      renderVendorTable();
+    }
+
     function renderVendorTable() {
       const tbody = document.getElementById('vendorBody');
       if (!allVendors.length) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:#718096">No vendors yet. Click + Add Vendor to get started.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#718096">No vendors yet. Click + Add Vendor to get started.</td></tr>';
         return;
       }
-      tbody.innerHTML = allVendors.map(function(v) { return makeVendorRow(v); }).join('');
+      const rows = [];
+      allVendors.forEach(function(v) {
+        const stores   = allStoreContacts.filter(s => (s.vendorCode || '').toUpperCase() === v.code.toUpperCase());
+        const expanded = expandedVendors.has(v.code);
+        rows.push(makeVendorRow(v, stores, expanded));
+        if (expanded) {
+          if (stores.length) {
+            stores.forEach(function(s) { rows.push(makeStoreContactRow(s)); });
+          } else {
+            rows.push('<tr class="store-contact-row">'
+              + '<td></td>'
+              + '<td colspan="3" style="padding:10px 16px;color:var(--muted);font-style:italic;font-size:.82rem">No store contacts registered yet.</td>'
+              + '</tr>');
+          }
+        }
+      });
+      tbody.innerHTML = rows.join('');
     }
 
-    function makeVendorRow(v) {
-      return '<tr>'
-        + '<td><code style="font-size:.8rem;letter-spacing:.05em">' + v.code + '</code></td>'
-        + '<td><input type="text" class="f-vcompany" value="' + (v.company || '') + '" placeholder="Company name" style="width:100%" /></td>'
-        + '<td style="white-space:nowrap;display:flex;gap:6px">'
-        + '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="copyVendorURL(\'' + v.code + '\', this)">Get URL</button>'
-        + '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="window.open(\'' + getOrderFormURL(v.code) + '\', \'_blank\')">Test URL</button>'
-        + '<button class="btn btn-danger"    style="font-size:.75rem;padding:4px 10px" onclick="this.closest(\'tr\').remove()">Delete</button>'
+    function makeVendorRow(v, stores, expanded) {
+      const count  = stores.length;
+      const badge  = count ? '<span class="store-count-badge">' + count + '</span>' : '';
+      const ec     = escH(v.code);
+      const arrow  = '&#9654;';   // filled right-triangle; CSS rotates it when .open
+      return '<tr class="vendor-row">'
+        + '<td style="width:36px;text-align:center;padding:0 4px">'
+        +   '<button class="vendor-expand-btn' + (expanded ? ' open' : '') + '"'
+        +     ' onclick="toggleVendorExpand(\'' + ec + '\')"'
+        +     ' title="' + (expanded ? 'Collapse' : 'Expand store contacts') + '">'
+        +     arrow
+        +   '</button>'
+        + '</td>'
+        + '<td><code style="font-size:.8rem;letter-spacing:.05em">' + ec + '</code>' + badge + '</td>'
+        + '<td><input type="text" class="f-vcompany" value="' + escH(v.company) + '" placeholder="Company name" style="width:100%" /></td>'
+        + '<td style="white-space:nowrap">'
+        +   '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="copyVendorURL(\'' + ec + '\', this)">Get URL</button>'
+        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="window.open(\'' + escH(getOrderFormURL(v.code)) + '\', \'_blank\')">Test URL</button>'
+        +     '<button class="btn btn-danger"    style="font-size:.75rem;padding:4px 10px" onclick="deleteVendor(\'' + ec + '\')">Delete</button>'
+        +   '</div>'
         + '</td>'
         + '</tr>';
     }
 
+    function makeStoreContactRow(s) {
+      const vc = escH(s.vendorCode || '');
+      const sc = escH(s.storeCode  || '');
+      return '<tr class="store-contact-row" data-vendor="' + vc + '" data-store="' + sc + '">'
+        + '<td style="width:36px"></td>'
+        + '<td style="padding-left:30px"><span class="store-code-badge">' + sc + '</span></td>'
+        + '<td>'
+        +   '<div style="font-weight:600">' + escH(s.firstName) + ' ' + escH(s.lastName) + '</div>'
+        +   '<div style="font-size:.78rem;color:var(--muted)">' + escH(s.email) + '</div>'
+        + '</td>'
+        + '<td style="white-space:nowrap">'
+        +   '<div style="display:flex;gap:6px">'
+        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px"'
+        +       ' onclick="editStoreContact(\'' + vc + '\',\'' + sc + '\')">Edit</button>'
+        +     '<button class="btn btn-danger"    style="font-size:.75rem;padding:4px 10px"'
+        +       ' onclick="deleteStoreContact(\'' + vc + '\',\'' + sc + '\')">Delete</button>'
+        +   '</div>'
+        + '</td>'
+        + '</tr>';
+    }
+
+    function editStoreContact(vendorCode, storeCode) {
+      const store = allStoreContacts.find(function(s) {
+        return (s.vendorCode || '').toUpperCase() === vendorCode.toUpperCase()
+            && (s.storeCode  || '').toUpperCase() === storeCode.toUpperCase();
+      });
+      if (!store) return;
+      const row = document.querySelector('.store-contact-row[data-vendor="' + vendorCode + '"][data-store="' + storeCode + '"]');
+      if (!row) return;
+      const vc = escH(vendorCode);
+      const sc = escH(storeCode);
+      row.innerHTML = '<td></td>'
+        + '<td style="padding-left:30px">'
+        +   '<input class="store-edit-input" style="width:90px;font-family:monospace" data-field="storeCode"'
+        +     ' value="' + escH(store.storeCode) + '" placeholder="Store code" />'
+        + '</td>'
+        + '<td>'
+        +   '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+        +     '<input class="store-edit-input" style="width:110px" data-field="firstName"'
+        +       ' value="' + escH(store.firstName) + '" placeholder="First name" />'
+        +     '<input class="store-edit-input" style="width:110px" data-field="lastName"'
+        +       ' value="' + escH(store.lastName)  + '" placeholder="Last name" />'
+        +     '<input class="store-edit-input" style="width:200px" data-field="email" type="email"'
+        +       ' value="' + escH(store.email)     + '" placeholder="Email" />'
+        +   '</div>'
+        + '</td>'
+        + '<td style="white-space:nowrap">'
+        +   '<div style="display:flex;gap:6px">'
+        +     '<button class="btn btn-success"   style="font-size:.75rem;padding:4px 10px"'
+        +       ' onclick="saveStoreEdit(\'' + vc + '\',\'' + sc + '\',this)">Save</button>'
+        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px"'
+        +       ' onclick="renderVendorTable()">Cancel</button>'
+        +   '</div>'
+        + '</td>';
+    }
+
+    async function saveStoreEdit(vendorCode, oldStoreCode, btn) {
+      const row        = btn.closest('tr');
+      const newCode    = row.querySelector('[data-field="storeCode"]').value.trim().toUpperCase();
+      const firstName  = row.querySelector('[data-field="firstName"]').value.trim();
+      const lastName   = row.querySelector('[data-field="lastName"]').value.trim();
+      const email      = row.querySelector('[data-field="email"]').value.trim();
+      if (!newCode || !firstName || !lastName || !email) { toast('All fields are required.', 'error'); return; }
+
+      btn.disabled = true; btn.textContent = 'Saving\u2026';
+      const vendor  = allVendors.find(function(v) { return v.code.toUpperCase() === vendorCode.toUpperCase(); });
+      const company = vendor ? vendor.company : '';
+      try {
+        // If store code changed, delete the old row first
+        if (newCode !== oldStoreCode.toUpperCase()) {
+          await fetch(WEBHOOK + '?action=deleteStore&vendorCode=' + encodeURIComponent(vendorCode) + '&storeCode=' + encodeURIComponent(oldStoreCode));
+        }
+        const payload = { vendorCode, storeCode: newCode, company, firstName, lastName, email };
+        const res  = await fetch(WEBHOOK + '?action=saveStore&payload=' + encodeURIComponent(JSON.stringify(payload)));
+        const data = await res.json();
+        if (data.status !== 'ok') throw new Error(data.message || 'Error');
+        // Update in memory
+        const idx = allStoreContacts.findIndex(function(s) {
+          return (s.vendorCode || '').toUpperCase() === vendorCode.toUpperCase()
+              && (s.storeCode  || '').toUpperCase() === oldStoreCode.toUpperCase();
+        });
+        const updated = { vendorCode, company, storeCode: newCode, firstName, lastName, email };
+        if (idx >= 0) allStoreContacts[idx] = updated; else allStoreContacts.push(updated);
+        toast('Store contact updated.', 'success');
+        renderVendorTable();
+      } catch (err) {
+        toast('Save failed: ' + err.message, 'error');
+        btn.disabled = false; btn.textContent = 'Save';
+      }
+    }
+
+    async function deleteStoreContact(vendorCode, storeCode) {
+      if (!confirm('Delete store contact "' + storeCode + '"? This cannot be undone.')) return;
+      try {
+        const res  = await fetch(WEBHOOK + '?action=deleteStore&vendorCode=' + encodeURIComponent(vendorCode) + '&storeCode=' + encodeURIComponent(storeCode));
+        const data = await res.json();
+        if (data.status !== 'ok') throw new Error(data.message || 'Error');
+        allStoreContacts = allStoreContacts.filter(function(s) {
+          return !((s.vendorCode || '').toUpperCase() === vendorCode.toUpperCase()
+                && (s.storeCode  || '').toUpperCase() === storeCode.toUpperCase());
+        });
+        toast('Store contact deleted.', 'success');
+        renderVendorTable();
+      } catch (err) {
+        toast('Delete failed: ' + err.message, 'error');
+      }
+    }
+
+    function deleteVendor(code) {
+      if (!confirm('Delete vendor "' + code + '"? This removes the vendor from the list (store contacts are kept).')) return;
+      allVendors = allVendors.filter(function(v) { return v.code.toUpperCase() !== code.toUpperCase(); });
+      expandedVendors.delete(code);
+      renderVendorTable();
+    }
+
     function addVendor() {
-      const tbody = document.getElementById('vendorBody');
-      if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
       const code = generateCode();
-      const tr = document.createElement('tr');
-      tr.innerHTML = makeVendorRow({ code, company: '' });
-      tbody.appendChild(tr);
+      allVendors.push({ code, company: '' });
+      renderVendorTable();
     }
 
     function collectVendors() {
-      return Array.from(document.querySelectorAll('#vendorBody tr'))
-        .filter(function(tr) { return !tr.querySelector('td[colspan]'); })
+      return Array.from(document.querySelectorAll('#vendorBody .vendor-row'))
         .map(function(tr) {
           return {
             code:    tr.querySelector('code').textContent.trim(),
-            company: tr.querySelector('.f-vcompany').value.trim(),
+            company: (tr.querySelector('.f-vcompany') || {}).value || '',
           };
         })
-        .filter(function(v) { return v.company; });
+        .filter(function(v) { return v.code && v.company; });
     }
 
     async function saveVendors() {
       const vendors = collectVendors();
       setVendorStatus('loading', 'Saving\u2026');
       try {
-        const url = WEBHOOK + '?action=saveVendors&payload=' + encodeURIComponent(JSON.stringify(vendors));
+        const url  = WEBHOOK + '?action=saveVendors&payload=' + encodeURIComponent(JSON.stringify(vendors));
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status === 'ok') {

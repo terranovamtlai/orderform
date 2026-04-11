@@ -61,6 +61,8 @@ function doGet(e) {
     else if (action === 'saveVendors')       return handleSaveVendors(e);
     else if (action === 'lookupStore')       return handleLookupStore(e);
     else if (action === 'saveStore')         return handleSaveStore(e);
+    else if (action === 'getStoreContacts')  return handleGetStoreContacts(e);
+    else if (action === 'deleteStore')       return handleDeleteStore(e);
     else                                     return handleSubmitOrder(e);
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
@@ -542,6 +544,64 @@ function handleSaveStore(e) {
     data.email     || '',
   ]);
   return json({ status: 'ok', action: 'inserted' });
+}
+
+/* ── Store contacts: list all (admin) ───────────────────── */
+
+/**
+ * getStoreContacts — return all store-contact rows.
+ * Optional ?vendorCode=X to filter by vendor.
+ * Schema: code | company | storeCode | firstName | lastName | email
+ */
+function handleGetStoreContacts(e) {
+  var filterVendor = (e.parameter && e.parameter.vendorCode)
+    ? e.parameter.vendorCode.trim().toUpperCase() : null;
+
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(VENDORS_SHEET);
+  if (!sheet || sheet.getLastRow() < 2) return json([]);
+
+  var rows     = sheet.getDataRange().getValues();
+  var contacts = [];
+  for (var i = 1; i < rows.length; i++) {
+    var rowStore = String(rows[i][2] || '').trim();
+    if (!rowStore) continue;   // vendor-level row — skip
+    var rowVendor = String(rows[i][0] || '').trim().toUpperCase();
+    if (filterVendor && rowVendor !== filterVendor) continue;
+    contacts.push({
+      vendorCode: rows[i][0] || '',
+      company:    rows[i][1] || '',
+      storeCode:  rows[i][2] || '',
+      firstName:  rows[i][3] || '',
+      lastName:   rows[i][4] || '',
+      email:      rows[i][5] || '',
+    });
+  }
+  return json(contacts);
+}
+
+/**
+ * deleteStore — remove a store-contact row by vendorCode + storeCode.
+ */
+function handleDeleteStore(e) {
+  var vendorCode = ((e.parameter && e.parameter.vendorCode) || '').trim().toUpperCase();
+  var storeCode  = ((e.parameter && e.parameter.storeCode)  || '').trim().toUpperCase();
+  if (!vendorCode || !storeCode) return json({ status: 'error', message: 'Missing vendorCode or storeCode' });
+
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(VENDORS_SHEET);
+  if (!sheet) return json({ status: 'error', message: 'Vendors sheet not found' });
+
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    var rv = String(rows[i][0] || '').trim().toUpperCase();
+    var rs = String(rows[i][2] || '').trim().toUpperCase();
+    if (rv === vendorCode && rs === storeCode) {
+      sheet.deleteRow(i + 1);
+      return json({ status: 'ok' });
+    }
+  }
+  return json({ status: 'error', message: 'Store contact not found: ' + vendorCode + '/' + storeCode });
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */
