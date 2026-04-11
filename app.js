@@ -539,6 +539,7 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
 
   // Reset to review state
   document.getElementById('dialogTitle').textContent  = 'Review Order';
+  document.getElementById('dialogBody').hidden        = false;
   document.getElementById('dialogSuccess').hidden     = true;
   document.getElementById('footReview').hidden        = false;
   document.getElementById('footConfirmed').hidden     = true;
