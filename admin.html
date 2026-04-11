@@ -1435,7 +1435,9 @@
 
         // ── Order rows (visible only when group expanded) ─
         orders.forEach(function(order) {
-          const sc   = order.storeCode ? '<span class="store-code-badge">' + escH(order.storeCode) + '</span>' : '<span style="color:var(--muted);font-size:.75rem">\u2014</span>';
+          const sc   = order.storeCode ? '<span class="store-code-badge">' + escH(order.storeCode) + '</span>'
+                                       + (order.contactName ? ' <span style="color:var(--muted);font-size:.78rem">(' + escH(order.contactName) + ')</span>' : '')
+                                       : '<span style="color:var(--muted);font-size:.75rem">\u2014</span>';
           const co   = escH(order.company || '');
           const oid  = order.orderId;
 
