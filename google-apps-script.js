@@ -286,7 +286,7 @@ function sendOrderEmail(data) {
 
   const html = ''
     + '<div style="font-family:sans-serif;max-width:620px;color:#1a202c">'
-    + '<div style="background:#1e3a5f;padding:20px 24px">'
+    + '<div style="background:#2a4a72;padding:20px 24px">'
     + '<h1 style="color:#fff;margin:0 0 12px;font-size:1.3rem">Terra Nova — New Wholesale Order</h1>'
     + '<table style="border-collapse:collapse;width:100%">'
     + (data.vendorCompany ? '<tr><td style="color:rgba(255,255,255,.55);font-size:.75rem;padding:2px 0;width:110px">Company</td><td style="color:#fff;font-size:.85rem;font-weight:700">' + data.vendorCompany + '</td></tr>' : '')

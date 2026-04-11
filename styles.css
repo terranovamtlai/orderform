@@ -4,8 +4,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --navy:       #1e3a5f;
-  --navy-lt:    #2c5282;
+  --navy:       #2a4a72;
+  --navy-lt:    #3a5f8a;
   --orange:     #f26522;
   --orange-lt:  #fff3eb;
   --green:      #2d9c5e;
