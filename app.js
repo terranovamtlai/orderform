@@ -248,8 +248,12 @@ document.getElementById('btnClear').addEventListener('click', () => {
    STORE IDENTIFICATION FLOW
    ============================================================ */
 
-async function lookupStoreAPI(code) {
-  const res = await fetch(`${SHEETS_WEBHOOK_URL}?action=lookupStore&code=${encodeURIComponent(code)}`);
+async function lookupStoreAPI(vendorCode, storeCode) {
+  const url = SHEETS_WEBHOOK_URL
+    + '?action=lookupStore'
+    + '&vendorCode=' + encodeURIComponent(vendorCode)
+    + '&storeCode='  + encodeURIComponent(storeCode);
+  const res = await fetch(url);
   return res.json();
 }
 
@@ -261,15 +265,17 @@ async function saveStoreAPI(storeData) {
 
 /** Main orchestrator — loops until currentStore is set. */
 async function initStoreFlow() {
+  const company = vendor ? vendor.company : '';
+
   while (!currentStore) {
-    const { code, lookupResult } = await showStoreCodeInput();
+    const { storeCode, lookupResult } = await showStoreCodeInput(company);
 
     if (lookupResult.status === 'ok' && lookupResult.email) {
-      const confirmed = await showStoreConfirmDialog(lookupResult);
+      const confirmed = await showStoreConfirmDialog(lookupResult, company);
       if (confirmed) currentStore = lookupResult;
       // else: not me — loop back to code input
     } else {
-      const registered = await showStoreRegisterDialog(code, lookupResult);
+      const registered = await showStoreRegisterDialog(storeCode, company, lookupResult);
       if (registered) currentStore = registered;
       // else: back pressed — loop back to code input
     }
@@ -277,18 +283,19 @@ async function initStoreFlow() {
 
   // Show store info bar in order panel
   document.getElementById('storeInfoName').textContent =
-    currentStore.firstName + ' ' + currentStore.lastName + ' — ' + currentStore.code;
+    currentStore.firstName + ' ' + currentStore.lastName + ' \u2014 ' + currentStore.storeCode;
   document.getElementById('storeInfoBar').hidden = false;
 }
 
-/** Step 1: store code input dialog. Resolves { code, lookupResult }. */
-function showStoreCodeInput(prefill) {
+/** Step 1: store code input. Resolves { storeCode, lookupResult }. */
+function showStoreCodeInput(company, prefill) {
   return new Promise(resolve => {
     const dialog  = document.getElementById('storeDialog');
     const input   = document.getElementById('storeCodeInput');
     const errorEl = document.getElementById('storeDialogError');
     const btn     = document.getElementById('btnStoreLookup');
 
+    document.getElementById('storeDialogSub').textContent = company || '';
     input.value     = prefill || '';
     errorEl.hidden  = true;
     btn.disabled    = false;
@@ -297,8 +304,8 @@ function showStoreCodeInput(prefill) {
     const ac = new AbortController();
 
     async function attempt() {
-      const code = input.value.trim().toUpperCase();
-      if (!code) {
+      const storeCode = input.value.trim().toUpperCase();
+      if (!storeCode) {
         errorEl.textContent = 'Please enter your store code.';
         errorEl.hidden = false;
         return;
@@ -307,10 +314,11 @@ function showStoreCodeInput(prefill) {
       btn.textContent = 'Looking up\u2026';
       errorEl.hidden  = true;
       try {
-        const data = await lookupStoreAPI(code);
+        const vendorCode = vendor ? vendor.code : '';
+        const data = await lookupStoreAPI(vendorCode, storeCode);
         ac.abort();
         dialog.close();
-        resolve({ code, lookupResult: data });
+        resolve({ storeCode, lookupResult: data });
       } catch (_) {
         errorEl.textContent = 'Could not connect. Please try again.';
         errorEl.hidden  = false;
@@ -329,16 +337,19 @@ function showStoreCodeInput(prefill) {
 }
 
 /** Step 2a: confirm existing store. Resolves true (confirmed) or false (not me). */
-function showStoreConfirmDialog(storeData) {
+function showStoreConfirmDialog(storeData, company) {
   return new Promise(resolve => {
     const dialog   = document.getElementById('storeConfirmDialog');
     const infoEl   = document.getElementById('storeConfirmInfo');
     const btnYes   = document.getElementById('btnStoreYes');
     const btnNotMe = document.getElementById('btnStoreNotMe');
 
+    document.getElementById('storeConfirmSub').textContent = company || '';
+
     infoEl.innerHTML =
-      '<div class="store-confirm-name">' + storeData.firstName + ' ' + storeData.lastName + '</div>' +
-      '<div class="store-confirm-email">' + storeData.email + '</div>';
+      '<div class="store-confirm-name">'    + storeData.firstName + ' ' + storeData.lastName + '</div>' +
+      '<div class="store-confirm-email">'   + storeData.email     + '</div>' +
+      '<div class="store-confirm-code">Store: ' + storeData.storeCode + '</div>';
 
     const ac = new AbortController();
     function done(v) { ac.abort(); dialog.close(); resolve(v); }
@@ -352,13 +363,15 @@ function showStoreConfirmDialog(storeData) {
 }
 
 /** Step 2b: register new store. Resolves store object or null (back). */
-function showStoreRegisterDialog(prefillCode, existing) {
+function showStoreRegisterDialog(prefillCode, company, existing) {
   return new Promise(resolve => {
     const dialog    = document.getElementById('storeRegisterDialog');
     const errorEl   = document.getElementById('storeRegisterError');
     const submitBtn = document.getElementById('btnRegisterSubmit');
     const backBtn   = document.getElementById('btnRegisterBack');
 
+    document.getElementById('storeRegisterSub').textContent = company || '';
+    document.getElementById('regCompany').textContent       = company || '';
     document.getElementById('regStoreCode').value    = prefillCode || '';
     document.getElementById('regFirstName').value    = (existing && existing.firstName) || '';
     document.getElementById('regLastName').value     = (existing && existing.lastName)  || '';
@@ -376,9 +389,9 @@ function showStoreRegisterDialog(prefillCode, existing) {
       const lastName     = document.getElementById('regLastName').value.trim();
       const email        = document.getElementById('regEmail').value.trim();
       const confirmEmail = document.getElementById('regConfirmEmail').value.trim();
-      const code         = document.getElementById('regStoreCode').value.trim().toUpperCase();
+      const storeCode    = document.getElementById('regStoreCode').value.trim().toUpperCase();
 
-      if (!firstName || !lastName || !email || !code) {
+      if (!firstName || !lastName || !email || !storeCode) {
         errorEl.textContent = 'Please fill in all required fields.';
         errorEl.hidden = false;
         return;
@@ -398,10 +411,11 @@ function showStoreRegisterDialog(prefillCode, existing) {
       submitBtn.textContent = 'Saving\u2026';
       errorEl.hidden = true;
 
+      const vendorCode = vendor ? vendor.code : '';
       try {
-        await saveStoreAPI({ code, firstName, lastName, email });
+        await saveStoreAPI({ vendorCode, storeCode, company, firstName, lastName, email });
         abort();
-        resolve({ code, firstName, lastName, email, status: 'ok' });
+        resolve({ vendorCode, storeCode, company, firstName, lastName, email, status: 'ok' });
       } catch (_) {
         errorEl.textContent   = 'Could not save. Please try again.';
         errorEl.hidden        = false;
@@ -467,6 +481,7 @@ function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, tot
   return `
     <div class="dialog-order-meta">
       ${vendor && vendor.company                           ? `<div class="dom-row"><span class="dom-label">Store Name</span><span class="dom-value">${vendor.company}</span></div>` : ''}
+      ${currentStore && currentStore.company               ? `<div class="dom-row"><span class="dom-label">Company</span><span class="dom-value">${currentStore.company}</span></div>` : ''}
       ${currentStore && currentStore.firstName             ? `<div class="dom-row"><span class="dom-label">Contact</span><span class="dom-value">${currentStore.firstName} ${currentStore.lastName}</span></div>` : ''}
       ${storeCode                                          ? `<div class="dom-row"><span class="dom-label">Store Code</span><span class="dom-value">${storeCode}</span></div>` : ''}
       ${customerEmail                                      ? `<div class="dom-row"><span class="dom-label">Confirmation sent to</span><span class="dom-value">${customerEmail}</span></div>` : ''}
@@ -502,7 +517,7 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
 
   if (!currentStore) return; // store identification required (shouldn't normally reach here)
 
-  data.storeCode     = currentStore.code;
+  data.storeCode     = currentStore.storeCode;
   data.customerEmail = currentStore.email;
 
   // Populate body
@@ -540,8 +555,8 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
 
   // Snapshot order data before clearing
   confirmedOrder = buildOrderData();
-  confirmedOrder.storeCode     = currentStore ? currentStore.code  : '';
-  confirmedOrder.customerEmail = currentStore ? currentStore.email : '';
+  confirmedOrder.storeCode     = currentStore ? currentStore.storeCode : '';
+  confirmedOrder.customerEmail = currentStore ? currentStore.email     : '';
 
   // Show submitting state in dialog
   document.getElementById('dialogTitle').textContent = 'Submitting Order…';

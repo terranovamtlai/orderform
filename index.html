@@ -125,7 +125,8 @@
   <!-- Store: code entry -->
   <dialog class="store-dialog" id="storeDialog">
     <div class="dialog-head">
-      <h2>Welcome to Terra Nova</h2>
+      <h2>Welcome</h2>
+      <div class="dialog-head-sub" id="storeDialogSub"></div>
     </div>
     <div class="store-dialog-body">
       <p>Please enter your store code to continue.</p>
@@ -144,6 +145,7 @@
   <dialog class="store-dialog" id="storeConfirmDialog">
     <div class="dialog-head">
       <h2>Is This You?</h2>
+      <div class="dialog-head-sub" id="storeConfirmSub"></div>
     </div>
     <div class="store-dialog-body">
       <p>We found an account for that store code:</p>
@@ -159,9 +161,13 @@
   <dialog class="store-dialog" id="storeRegisterDialog">
     <div class="dialog-head">
       <h2>Set Up Your Store</h2>
+      <div class="dialog-head-sub" id="storeRegisterSub"></div>
     </div>
     <div class="store-dialog-body">
-      <p>Please fill in your details to continue.</p>
+      <div class="store-field">
+        <label>Company</label>
+        <div class="store-field-readonly" id="regCompany"></div>
+      </div>
       <div class="store-fields-grid">
         <div class="store-field">
           <label for="regFirstName">First Name</label>

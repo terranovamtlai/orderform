@@ -401,7 +401,10 @@ function handleGetVendor(e) {
   if (!sheet || sheet.getLastRow() < 2) return json({ status: 'notfound' });
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]).toUpperCase() === code) {
+    var rowCode      = String(rows[i][0] || '').trim().toUpperCase();
+    var rowStoreCode = String(rows[i][2] || '').trim();
+    // Match vendor-level rows only (no storeCode in col 2)
+    if (rowCode === code && !rowStoreCode) {
       return json({ status: 'ok', code: rows[i][0], company: rows[i][1] });
     }
   }
@@ -413,7 +416,10 @@ function handleGetVendors() {
   var sheet = ss.getSheetByName(VENDORS_SHEET);
   if (!sheet || sheet.getLastRow() < 2) return json([]);
   var rows = sheet.getDataRange().getValues();
-  return json(rows.slice(1).filter(function(r) { return r[0]; }).map(function(r) {
+  // Return vendor-level rows only (storeCode col is empty)
+  return json(rows.slice(1).filter(function(r) {
+    return r[0] && !String(r[2] || '').trim();
+  }).map(function(r) {
     return { code: r[0], company: r[1] };
   }));
 }
@@ -424,53 +430,64 @@ function handleSaveVendors(e) {
   var sheet = ss.getSheetByName(VENDORS_SHEET);
   if (!sheet) sheet = ss.insertSheet(VENDORS_SHEET);
 
-  // Preserve existing contact data (firstName/lastName/email) keyed by code
-  var contactMap = {};
+  // Preserve existing store-contact rows (rows with a storeCode in col 2)
+  var storeRows = [];
   if (sheet.getLastRow() >= 2) {
     var existing = sheet.getDataRange().getValues();
     for (var i = 1; i < existing.length; i++) {
-      var key = String(existing[i][0]).trim().toUpperCase();
-      if (key) contactMap[key] = [existing[i][2] || '', existing[i][3] || '', existing[i][4] || ''];
+      if (String(existing[i][2] || '').trim()) {
+        storeRows.push(existing[i].slice(0, 6));
+      }
     }
   }
 
   sheet.clearContents();
-  sheet.appendRow(['code', 'company', 'firstName', 'lastName', 'email']);
-  sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+  // Schema: code | company | storeCode | firstName | lastName | email
+  sheet.appendRow(['code', 'company', 'storeCode', 'firstName', 'lastName', 'email']);
+  sheet.getRange(1, 1, 1, 6).setFontWeight('bold');
   sheet.setFrozenRows(1);
+
+  // Vendor-level rows (storeCode is blank)
   vendors.forEach(function(v) {
-    var key     = String(v.code || '').trim().toUpperCase();
-    var contact = contactMap[key] || ['', '', ''];
-    sheet.appendRow([v.code, v.company, contact[0], contact[1], contact[2]]);
+    sheet.appendRow([v.code, v.company, '', '', '', '']);
   });
+
+  // Re-append store contact rows
+  storeRows.forEach(function(r) { sheet.appendRow(r); });
+
   return json({ status: 'ok', saved: vendors.length });
 }
 
 /* ── Store contact lookup & save ────────────────────────── */
 
 /**
- * lookupStore — find a row in Vendors by store code.
- * Returns { status:'ok', code, company, firstName, lastName, email }
+ * lookupStore — find a store-contact row by vendorCode + storeCode.
+ * Vendors sheet schema: code | company | storeCode | firstName | lastName | email
+ * Returns { status:'ok', vendorCode, storeCode, company, firstName, lastName, email }
  * or      { status:'notfound' }
- *
- * Vendors sheet columns: code | company | firstName | lastName | email
  */
 function handleLookupStore(e) {
-  var code  = ((e.parameter && e.parameter.code) || '').trim().toUpperCase();
+  var vendorCode = ((e.parameter && e.parameter.vendorCode) || '').trim().toUpperCase();
+  var storeCode  = ((e.parameter && e.parameter.storeCode)  || '').trim().toUpperCase();
+  if (!vendorCode || !storeCode) return json({ status: 'notfound' });
+
   var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(VENDORS_SHEET);
   if (!sheet || sheet.getLastRow() < 2) return json({ status: 'notfound' });
 
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]).trim().toUpperCase() === code) {
+    var rowVendor = String(rows[i][0] || '').trim().toUpperCase();
+    var rowStore  = String(rows[i][2] || '').trim().toUpperCase();
+    if (rowVendor === vendorCode && rowStore === storeCode) {
       return json({
-        status:    'ok',
-        code:      rows[i][0] || '',
-        company:   rows[i][1] || '',
-        firstName: rows[i][2] || '',
-        lastName:  rows[i][3] || '',
-        email:     rows[i][4] || '',
+        status:     'ok',
+        vendorCode: rows[i][0] || '',
+        company:    rows[i][1] || '',
+        storeCode:  rows[i][2] || '',
+        firstName:  rows[i][3] || '',
+        lastName:   rows[i][4] || '',
+        email:      rows[i][5] || '',
       });
     }
   }
@@ -478,32 +495,35 @@ function handleLookupStore(e) {
 }
 
 /**
- * saveStore — upsert a Vendors row with contact details.
- * Payload: { code, firstName, lastName, email }
- * Adds the row if code is new; updates firstName/lastName/email if it exists.
- * company is preserved on update (only set on insert if provided).
+ * saveStore — upsert a store-contact row.
+ * Payload: { vendorCode, storeCode, company, firstName, lastName, email }
+ * Composite key: vendorCode + storeCode.
+ * On update: only firstName/lastName/email change; vendorCode/company/storeCode preserved.
  */
 function handleSaveStore(e) {
-  var data  = JSON.parse(e.parameter.payload);
-  var code  = String(data.code || '').trim().toUpperCase();
-  if (!code) return json({ status: 'error', message: 'Missing code' });
+  var data       = JSON.parse(e.parameter.payload);
+  var vendorCode = String(data.vendorCode || '').trim().toUpperCase();
+  var storeCode  = String(data.storeCode  || '').trim().toUpperCase();
+  if (!vendorCode || !storeCode) return json({ status: 'error', message: 'Missing vendorCode or storeCode' });
 
   var ss    = getSpreadsheet();
   var sheet = ss.getSheetByName(VENDORS_SHEET);
   if (!sheet) sheet = ss.insertSheet(VENDORS_SHEET);
 
-  // Ensure headers exist (code | company | firstName | lastName | email)
+  // Ensure headers exist
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['code', 'company', 'firstName', 'lastName', 'email']);
-    sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+    sheet.appendRow(['code', 'company', 'storeCode', 'firstName', 'lastName', 'email']);
+    sheet.getRange(1, 1, 1, 6).setFontWeight('bold');
     sheet.setFrozenRows(1);
   }
 
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]).trim().toUpperCase() === code) {
-      // Update contact columns only; preserve code & company
-      sheet.getRange(i + 1, 3, 1, 3).setValues([[
+    var rowVendor = String(rows[i][0] || '').trim().toUpperCase();
+    var rowStore  = String(rows[i][2] || '').trim().toUpperCase();
+    if (rowVendor === vendorCode && rowStore === storeCode) {
+      // Update contact columns (4-6); preserve code, company, storeCode
+      sheet.getRange(i + 1, 4, 1, 3).setValues([[
         data.firstName || '',
         data.lastName  || '',
         data.email     || '',
@@ -511,10 +531,12 @@ function handleSaveStore(e) {
       return json({ status: 'ok', action: 'updated' });
     }
   }
-  // New row
+
+  // New store-contact row
   sheet.appendRow([
-    code,
+    vendorCode,
     data.company   || '',
+    storeCode,
     data.firstName || '',
     data.lastName  || '',
     data.email     || '',

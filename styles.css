@@ -836,8 +836,27 @@ body {
   gap: 4px;
   border-left: 3px solid var(--orange);
 }
-.store-confirm-name  { font-size: 1rem; font-weight: 700; color: var(--navy); }
-.store-confirm-email { font-size: .875rem; color: var(--muted); }
+.store-confirm-name    { font-size: 1rem; font-weight: 700; color: var(--navy); }
+.store-confirm-email   { font-size: .875rem; color: var(--muted); }
+.store-confirm-company { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+.store-confirm-code    { font-size: .78rem; color: var(--muted); }
+
+.dialog-head-sub {
+  font-size: .8rem;
+  color: rgba(255,255,255,.65);
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+.store-field-readonly {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--navy);
+  background: var(--bg);
+}
 
 /* ============================================================
    PRINT
