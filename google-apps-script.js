@@ -286,17 +286,17 @@ function sendOrderEmail(data) {
 
   const html = ''
     + '<div style="font-family:sans-serif;max-width:620px;color:#1a202c">'
-    + '<div style="background:#2a4a72;padding:20px 24px">'
+    + '<div style="background:#132540;padding:20px 24px">'
     + '<h1 style="color:#fff;margin:0 0 12px;font-size:1.3rem">Terra Nova — New Wholesale Order</h1>'
     + '<table style="border-collapse:collapse;width:100%">'
-    + (data.vendorCompany ? '<tr><td style="color:rgba(255,255,255,.55);font-size:.75rem;padding:2px 0;width:110px">Company</td><td style="color:#fff;font-size:.85rem;font-weight:700">' + data.vendorCompany + '</td></tr>' : '')
-    + (data.storeCode     ? '<tr><td style="color:rgba(255,255,255,.55);font-size:.75rem;padding:2px 0">Store Code</td><td style="color:#e8d5b7;font-size:.85rem;font-family:monospace;letter-spacing:.05em">' + data.storeCode + '</td></tr>' : '')
-    + (data.contactName   ? '<tr><td style="color:rgba(255,255,255,.55);font-size:.75rem;padding:2px 0">Contact</td><td style="color:#fff;font-size:.85rem">' + data.contactName + '</td></tr>' : '')
-    + (data.customerEmail ? '<tr><td style="color:rgba(255,255,255,.55);font-size:.75rem;padding:2px 0">Email</td><td style="color:#fff;font-size:.85rem">' + data.customerEmail + '</td></tr>' : '')
+    + (data.vendorCompany ? '<tr><td style="color:#a8bfd4;font-size:.75rem;padding:2px 0;width:110px">Company</td><td style="color:#fff;font-size:.85rem;font-weight:700">' + data.vendorCompany + '</td></tr>' : '')
+    + (data.storeCode     ? '<tr><td style="color:#a8bfd4;font-size:.75rem;padding:2px 0">Store Code</td><td style="color:#e8d5b7;font-size:.85rem;font-family:monospace;letter-spacing:.05em">' + data.storeCode + '</td></tr>' : '')
+    + (data.contactName   ? '<tr><td style="color:#a8bfd4;font-size:.75rem;padding:2px 0">Contact</td><td style="color:#fff;font-size:.85rem">' + data.contactName + '</td></tr>' : '')
+    + (data.customerEmail ? '<tr><td style="color:#a8bfd4;font-size:.75rem;padding:2px 0">Email</td><td style="color:#fff;font-size:.85rem">' + data.customerEmail + '</td></tr>' : '')
     + '</table>'
     + '</div>'
     + '<div style="padding:24px">'
-    + '<p style="color:#718096;margin:0 0 16px">Order <strong>' + data.orderId + '</strong> &nbsp;·&nbsp; ' + data.date + '</p>'
+    + '<p style="color:#718096;margin:20px 0 16px">Order <strong>' + data.orderId + '</strong> &nbsp;·&nbsp; ' + data.date + '</p>'
     + '<table style="width:100%;border-collapse:collapse">'
     + '<thead><tr style="background:#f0f4f8">'
     + th('Product') + th('Order Qty') + th('Total Units') + th('Line Total', 'right')
