@@ -1169,7 +1169,7 @@
                       <th>Name</th>
                       <th>Item</th>
                       <th>Barcode / SKU</th>
-                      <th>SRP / Cost / Dealer</th>
+                      <th>Cost / Dealer / Retail</th>
                       <th>Order Unit</th>
                       <th>Status</th>
                       <th style="width:110px"></th>
@@ -1189,8 +1189,8 @@
                             <code style="font-size:.78rem">${p.sku}</code>
                           </td>
                           <td class="prod-price">
-                            <strong>$${Number(p.srp).toFixed(2)}</strong>
-                            <small>&nbsp;/&nbsp;$${Number(p.cost || 0).toFixed(2)}&nbsp;/&nbsp;$${Number(p.dealer).toFixed(2)}</small>
+                            <strong>$${Number(p.cost || 0).toFixed(2)}</strong>
+                            <small>&nbsp;/&nbsp;$${Number(p.dealer).toFixed(2)}&nbsp;/&nbsp;$${Number(p.srp).toFixed(2)}</small>
                           </td>
                           <td><span style="font-size:.8rem">${p.orderUnit} of ${p.unitsPerOrder} ${p.unitLabel}</span></td>
                           <td>
