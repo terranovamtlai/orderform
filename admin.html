@@ -1651,7 +1651,6 @@
           + '</td>'
           + '<td style="text-align:center" class="om-line-units-' + idx + '">' + l.units + '</td>'
           + '<td style="text-align:right" class="om-line-dealer-' + idx + '">$' + Number(l.lineDealer).toFixed(2) + '</td>'
-          + '<td style="text-align:right" class="om-line-srp-' + idx + '">$' + Number(l.lineSRP).toFixed(2) + '</td>'
           + '<td style="text-align:center">'
           +   '<button class="om-del-btn" onclick="deleteOrderModalLine(' + idx + ')" title="Remove line">&times;</button>'
           + '</td>'
@@ -1680,8 +1679,7 @@
             <th>Product</th><th>SKU</th>
             <th style="text-align:center">Order Qty</th>
             <th style="text-align:center">Total Units</th>
-            <th style="text-align:right">Line Dealer</th>
-            <th style="text-align:right">Line SRP</th>
+            <th style="text-align:right">Dealer</th>
             <th style="width:32px"></th>
           </tr></thead>
           <tbody>${productRows}</tbody>
@@ -1689,7 +1687,7 @@
         <div class="om-totals">
           <span>Total Order Units</span>     <strong id="om-total-qty">${order.totalOrderUnits || '—'}</strong>
           <span>Total Individual Units</span> <strong id="om-total-units">${order.totalIndividualUnits || '—'}</strong>
-          <span>Dealer Total</span>           <strong id="om-total-dealer">$${Number(order.totalDealer).toFixed(2)}</strong>
+          <span>Dealer Cost</span>             <strong id="om-total-dealer">$${Number(order.totalDealer).toFixed(2)}</strong>
           <span>Retail Value (SRP)</span>     <strong id="om-total-srp" style="color:var(--green)">$${Number(order.totalRetail).toFixed(2)}</strong>
         </div>
       `;
@@ -1706,7 +1704,6 @@
       const newUnits      = Math.round(newQty * unitsPerQty);
       document.querySelector('.om-line-units-'  + idx).textContent = newUnits;
       document.querySelector('.om-line-dealer-' + idx).textContent = '$' + (newQty * unitsPerQty * dealerPerUnit).toFixed(2);
-      document.querySelector('.om-line-srp-'    + idx).textContent = '$' + (newQty * unitsPerQty * srpPerUnit).toFixed(2);
       recalcOrderModalTotals();
     }
 
