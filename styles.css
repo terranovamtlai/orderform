@@ -621,7 +621,7 @@ body {
 }
 .dialog-totals .dt-label { color: var(--muted); }
 .dialog-totals .dt-value { text-align: right; font-weight: 700; }
-.dialog-totals .dt-grand  { color: var(--green); font-size: .95rem; }
+.dialog-totals .dt-grand  { color: var(--green); font-size: .95rem; font-weight: normal; }
 
 .dialog-comments {
   padding: 12px 20px 0;

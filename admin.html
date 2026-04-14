@@ -1688,7 +1688,7 @@
           <span>Total Order Units</span>     <strong id="om-total-qty">${order.totalOrderUnits || '—'}</strong>
           <span>Total Individual Units</span> <strong id="om-total-units">${order.totalIndividualUnits || '—'}</strong>
           <span>Dealer Cost</span>             <strong id="om-total-dealer">$${Number(order.totalDealer).toFixed(2)}</strong>
-          <span>Retail Value (SRP)</span>     <strong id="om-total-srp" style="color:var(--green)">$${Number(order.totalRetail).toFixed(2)}</strong>
+          <span>Retail Value (SRP)</span>     <span id="om-total-srp" style="text-align:right;color:var(--green)">$${Number(order.totalRetail).toFixed(2)}</span>
         </div>
       `;
 

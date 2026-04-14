@@ -742,7 +742,7 @@ document.getElementById('btnPrint') && document.getElementById('btnPrint').addEv
               row-gap: 8px; font-size: .875rem; max-width: 340px; margin-left: auto; }
     .totals .lbl  { color: #718096; }
     .totals .val  { text-align: right; font-weight: 700; }
-    .totals .grand { color: #2d9c5e; }
+    .totals .grand { color: #2d9c5e; font-weight: normal; }
     @media print { body { padding: 16px; } }
   </style>
 </head>

@@ -332,7 +332,7 @@ function sendOrderEmail(data) {
     + row2('Total Order Units',      data.totalOrderUnits)
     + row2('Total Individual Units', data.totalIndividualUnits)
     + row2('Dealer Total',            '$' + data.totalDealer.toFixed(2))
-    + row2('Retail Value (SRP)',     '$' + data.totalRetail.toFixed(2), '#2d9c5e')
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:6px"><tr><td style="color:#718096">Retail Value (SRP)</td><td align="right" style="color:#2d9c5e">$' + data.totalRetail.toFixed(2) + '</td></tr></table>'
     + '</div>'
     + (data.comments ? '<div style="margin-top:16px;padding:12px 14px;background:#fffbeb;border-left:3px solid #f6ad55;border-radius:4px"><strong style="font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#92400e">Comments</strong><p style="margin:4px 0 0;color:#1a202c;font-size:.9rem">' + data.comments + '</p></div>' : '')
     + '</div></div>';
