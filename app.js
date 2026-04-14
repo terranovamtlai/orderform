@@ -106,10 +106,10 @@ function makeProductRow(p) {
         <div class="barcode-text">${p.barcode}</div>
         <div><span class="sku-badge">${p.sku}</span></div>
       </td>
-      <td><span class="srp-text">${fmt(p.srp)}</span></td>
-      <td><span class="profit-badge">${profitPct(p)}%</span></td>
       <td><span class="wholesale-text">${fmt(p.cost || 0)}</span></td>
       <td><span class="wholesale-text">${fmt(p.dealer)}</span></td>
+      <td><span class="srp-text">${fmt(p.srp)}</span></td>
+      <td><span class="profit-badge">${profitPct(p)}%</span></td>
       <td class="col-qty">
         ${avail ? `
         <div class="qty-stepper">
