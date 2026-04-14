@@ -54,6 +54,7 @@ var ADMIN_ACTIONS = {
   saveProducts:      true,
   getOrders:         true,
   updateOrderStatus: true,
+  updateOrderLines:  true,
   getVendors:        true,
   saveVendors:       true,
   deleteStore:       true,
@@ -77,6 +78,7 @@ function doGet(e) {
     else if (action === 'saveProducts')      return handleSaveProducts(e);
     else if (action === 'getOrders')         return handleGetOrders();
     else if (action === 'updateOrderStatus') return handleUpdateOrderStatus(e);
+    else if (action === 'updateOrderLines')  return handleUpdateOrderLines(e);
     else if (action === 'getVendor')         return handleGetVendor(e);
     else if (action === 'getVendors')        return handleGetVendors();
     else if (action === 'saveVendors')       return handleSaveVendors(e);
@@ -397,7 +399,49 @@ function handleGetOrders() {
   }
 
   orders.reverse(); // most recent first
-  return json(orders);
+  return json(orders.filter(function(o) { return o.lines && o.lines.length > 0; }));
+}
+
+/* ── Orders: update line quantities ─────────────────────── */
+function handleUpdateOrderLines(e) {
+  var payload = JSON.parse(e.parameter.payload);
+  var orderId = payload.orderId;
+  var lines   = payload.lines; // [{name, qty, units, lineDealer, lineSRP}]
+
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(ORDERS_SHEET);
+  if (!sheet) return json({ status: 'error', message: 'Orders sheet not found' });
+
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    var rowOrderId = String(data[i][1]);
+
+    if (rowOrderId === orderId && String(data[i][2]) !== '') {
+      // Line row — update qty, units, lineDealer, lineSRP
+      var line = null;
+      for (var j = 0; j < lines.length; j++) {
+        if (lines[j].name === String(data[i][2])) { line = lines[j]; break; }
+      }
+      if (line) {
+        sheet.getRange(i + 1, 7).setValue(line.qty);
+        sheet.getRange(i + 1, 8).setValue(line.units);
+        sheet.getRange(i + 1, 10).setValue(line.lineDealer);
+        sheet.getRange(i + 1, 12).setValue(line.lineSRP);
+      }
+    } else if (rowOrderId === orderId + ' \u2014 TOTAL') {
+      // TOTAL row — recalculate sums
+      var tQty    = lines.reduce(function(s, l) { return s + l.qty; }, 0);
+      var tUnits  = lines.reduce(function(s, l) { return s + l.units; }, 0);
+      var tDealer = lines.reduce(function(s, l) { return s + l.lineDealer; }, 0);
+      var tSRP    = lines.reduce(function(s, l) { return s + l.lineSRP; }, 0);
+      sheet.getRange(i + 1, 7).setValue(tQty);
+      sheet.getRange(i + 1, 8).setValue(tUnits);
+      sheet.getRange(i + 1, 10).setValue(tDealer);
+      sheet.getRange(i + 1, 12).setValue(tSRP);
+      break;
+    }
+  }
+  return json({ status: 'ok' });
 }
 
 /* ── Orders: update status checkbox ─────────────────────── */

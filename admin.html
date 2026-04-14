@@ -269,17 +269,20 @@
 
     /* ── Order modal ── */
     .order-modal {
-      width: min(680px, 96vw);
-      max-height: 88vh;
+      width: min(900px, 96vw);
+      max-height: 90vh;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 0;
-      box-shadow: 0 8px 40px rgba(0,0,0,.18);
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      margin: 0;
     }
-    .order-modal::backdrop { background: rgba(0,0,0,.45); }
+    .order-modal[open] { display: flex; flex-direction: column; }
+    .order-modal::backdrop { background: rgba(0,0,0,.5); }
     .order-modal .modal-body {
       overflow-y: auto;
       padding: 20px;
@@ -325,6 +328,12 @@
       background: var(--bg);
     }
     .om-comments textarea:focus { outline: none; border-color: var(--navy); }
+    .om-qty-input {
+      width: 60px; padding: 4px 6px; border: 1px solid var(--border);
+      border-radius: 4px; font-size: .85rem; text-align: center;
+      font-family: inherit; color: var(--text);
+    }
+    .om-qty-input:focus { outline: none; border-color: var(--navy); }
     .om-lines-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
     .om-lines-table th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; padding: 6px 8px; border-bottom: 2px solid var(--border); }
     .om-lines-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
@@ -1514,7 +1523,7 @@
         ]);
         const ordData   = await ordRes.json();
         const storeData = await storeRes.json();
-        allOrders = Array.isArray(ordData)   ? ordData   : [];
+        allOrders = Array.isArray(ordData) ? ordData.filter(function(o) { return o.orderId && o.lines && o.lines.length > 0; }) : [];
         const contacts = Array.isArray(storeData) ? storeData : [];
         // Enrich orders with the contact name from the Vendors/Stores sheet
         allOrders.forEach(function(o) {
@@ -1618,14 +1627,24 @@
       document.getElementById('omTitle').textContent = 'Order ' + order.orderId;
       document.getElementById('omDate').textContent  = fmtDate(order.date);
 
-      const productRows = order.lines.map(function(l) {
+      const productRows = order.lines.map(function(l, idx) {
+        const unitsPerQty    = l.qty > 0 ? l.units / l.qty : 0;
+        const dealerPerUnit  = l.units > 0 ? l.lineDealer / l.units : 0;
+        const srpPerUnit     = l.units > 0 ? l.lineSRP    / l.units : 0;
         return '<tr>'
           + '<td>' + escH(l.name) + '</td>'
           + '<td style="font-size:.78rem;color:var(--muted)">' + escH(l.sku || '') + '</td>'
-          + '<td style="text-align:center">' + l.qty + ' ' + l.orderUnit + (l.qty !== 1 ? 's' : '') + '</td>'
-          + '<td style="text-align:center">' + l.units + '</td>'
-          + '<td style="text-align:right">$' + Number(l.lineDealer).toFixed(2) + '</td>'
-          + '<td style="text-align:right">$' + Number(l.lineSRP).toFixed(2) + '</td>'
+          + '<td style="text-align:center">'
+          +   '<input type="number" class="om-qty-input" min="1" step="1" value="' + l.qty + '"'
+          +   ' data-idx="' + idx + '"'
+          +   ' data-units-per-qty="' + unitsPerQty + '"'
+          +   ' data-dealer-per-unit="' + dealerPerUnit + '"'
+          +   ' data-srp-per-unit="' + srpPerUnit + '">'
+          +   ' <small style="color:var(--muted)">' + escH(l.orderUnit) + '</small>'
+          + '</td>'
+          + '<td style="text-align:center" class="om-line-units-' + idx + '">' + l.units + '</td>'
+          + '<td style="text-align:right" class="om-line-dealer-' + idx + '">$' + Number(l.lineDealer).toFixed(2) + '</td>'
+          + '<td style="text-align:right" class="om-line-srp-' + idx + '">$' + Number(l.lineSRP).toFixed(2) + '</td>'
           + '</tr>';
       }).join('');
 
@@ -1682,11 +1701,44 @@
         comments:        document.getElementById('om-comments-input').value.trim(),
       };
 
+      // Collect updated line quantities
+      const updatedLines = Array.from(document.querySelectorAll('.om-qty-input')).map(function(input) {
+        const idx          = parseInt(input.dataset.idx);
+        const l            = editingOrder.lines[idx];
+        const newQty       = Math.max(1, parseInt(input.value) || 1);
+        const unitsPerQty  = parseFloat(input.dataset.unitsPerQty)   || 0;
+        const dealerPerUnit= parseFloat(input.dataset.dealerPerUnit) || 0;
+        const srpPerUnit   = parseFloat(input.dataset.srpPerUnit)    || 0;
+        const newUnits     = Math.round(newQty * unitsPerQty);
+        return { name: l.name, qty: newQty, units: newUnits,
+                 lineDealer: newQty * unitsPerQty * dealerPerUnit,
+                 lineSRP:    newQty * unitsPerQty * srpPerUnit };
+      });
+      const linesChanged = updatedLines.some(function(l, idx) { return l.qty !== editingOrder.lines[idx].qty; });
+
       try {
+        // Save status fields
         for (const [field, value] of Object.entries(fields)) {
           if (field === 'comments' || value !== editingOrder[field]) {
-            await updateStatus(oid, field, value);
+            const payload = JSON.stringify({ orderId: oid, field, value });
+            const res = await fetch(WEBHOOK + '?action=updateOrderStatus&pw=' + apw() + '&payload=' + encodeURIComponent(payload));
+            const data = await res.json();
+            if (data.status !== 'ok') throw new Error(data.message);
           }
+        }
+        // Save line quantities if changed
+        if (linesChanged) {
+          const payload = JSON.stringify({ orderId: oid, lines: updatedLines });
+          const res = await fetch(WEBHOOK + '?action=updateOrderLines&pw=' + apw() + '&payload=' + encodeURIComponent(payload));
+          const data = await res.json();
+          if (data.status !== 'ok') throw new Error(data.message || 'Failed to update lines');
+          editingOrder.lines = updatedLines.map(function(ul, idx) {
+            return Object.assign({}, editingOrder.lines[idx], ul);
+          });
+          editingOrder.totalOrderUnits      = updatedLines.reduce(function(s, l) { return s + l.qty; }, 0);
+          editingOrder.totalIndividualUnits = updatedLines.reduce(function(s, l) { return s + l.units; }, 0);
+          editingOrder.totalDealer          = updatedLines.reduce(function(s, l) { return s + l.lineDealer; }, 0);
+          editingOrder.totalRetail          = updatedLines.reduce(function(s, l) { return s + l.lineSRP; }, 0);
         }
         Object.assign(editingOrder, fields);
         renderOrders();
@@ -1714,10 +1766,10 @@
         if (data.status !== 'ok') throw new Error(data.message);
         const order = allOrders.find(function(o) { return o.orderId === orderId; });
         if (order) order[field] = value;
-        toast('Saved', 'success');
       } catch (err) {
         toast('Save failed: ' + err.message, 'error');
         loadOrders();
+        throw err;
       }
     }
 
