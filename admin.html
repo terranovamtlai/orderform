@@ -1263,7 +1263,12 @@
       document.getElementById('m-srp').value                = p.srp            || '';
       document.getElementById('m-cost').value               = p.cost           || '';
       updateDealerDisplay();
-      document.getElementById('m-orderUnit').value          = p.orderUnit      || 'display';
+      const orderUnitSel = document.getElementById('m-orderUnit');
+      const orderUnitVal = (p.orderUnit || 'display').trim();
+      if (![...orderUnitSel.options].some(o => o.value === orderUnitVal)) {
+        orderUnitSel.appendChild(Object.assign(document.createElement('option'), { value: orderUnitVal, textContent: orderUnitVal }));
+      }
+      orderUnitSel.value = orderUnitVal;
       document.getElementById('m-unitsPerOrder').value      = p.unitsPerOrder  || 6;
       document.getElementById('m-unitLabel').value          = p.unitLabel      || 'pairs';
       document.getElementById('m-status').value             = p.status         || 'available';
