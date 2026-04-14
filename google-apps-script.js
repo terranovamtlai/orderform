@@ -46,10 +46,31 @@ function getNextOrderId() {
   return 'TN-' + yyyy + mo + dd + '-' + hh + min + '-' + seq;
 }
 
+/* ── Admin-only actions (require pw param) ───────────────── */
+var ADMIN_ACTIONS = {
+  getUploadToken:    true,
+  saveProduct:       true,
+  deleteProduct:     true,
+  saveProducts:      true,
+  getOrders:         true,
+  updateOrderStatus: true,
+  getVendor:         true,
+  getVendors:        true,
+  saveVendors:       true,
+  saveStore:         true,
+  deleteStore:       true,
+};
+
 /* ── Router ──────────────────────────────────────────────── */
 function doGet(e) {
   const action = (e.parameter && e.parameter.action) || 'submitOrder';
   try {
+    if (ADMIN_ACTIONS[action]) {
+      var pw = (e.parameter && e.parameter.pw) ? e.parameter.pw : '';
+      if (pw !== ADMIN_PASSWORD) {
+        return json({ status: 'error', message: 'Unauthorized' });
+      }
+    }
     if      (action === 'getProducts')       return handleGetProducts(e);
     else if (action === 'getUploadToken')    return handleGetUploadToken();
     else if (action === 'saveProduct')       return handleSaveProduct(e);

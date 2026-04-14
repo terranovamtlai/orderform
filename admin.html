@@ -638,6 +638,10 @@
   <script>
     const WEBHOOK     = 'https://script.google.com/macros/s/AKfycbwvveBT8M11c2gCZ0utPNySEQtwtbH2G7OxDePMeX41DkeC6Jr3bSiIfBxcRhKftcZ1Wg/exec';
     const SESSION_KEY = 'tn_admin_auth';
+    const SESSION_PW  = 'tn_admin_pw';
+
+    // Returns the stored password URL-encoded, for appending to admin API calls
+    function apw() { return encodeURIComponent(sessionStorage.getItem(SESSION_PW) || ''); }
 
     const DEFAULTS = [
       { id:1, name:'Bacon Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, cost:0, img:'image2.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
@@ -671,6 +675,7 @@
         const data = await res.json();
         if (data.ok) {
           sessionStorage.setItem(SESSION_KEY, '1');
+          sessionStorage.setItem(SESSION_PW, pw);
           document.getElementById('loginScreen').style.display  = 'none';
           document.getElementById('adminContent').style.display = 'block';
           loadProducts();
@@ -690,12 +695,13 @@
 
     function logout() {
       sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(SESSION_PW);
       document.getElementById('loginScreen').style.display  = 'flex';
       document.getElementById('adminContent').style.display = 'none';
       document.getElementById('pwInput').value = '';
     }
 
-    if (sessionStorage.getItem(SESSION_KEY)) {
+    if (sessionStorage.getItem(SESSION_KEY) && sessionStorage.getItem(SESSION_PW)) {
       document.getElementById('loginScreen').style.display  = 'none';
       document.getElementById('adminContent').style.display = 'block';
       loadProducts();
@@ -742,7 +748,7 @@
       setVendorStatus('loading', 'Loading vendors\u2026');
       try {
         const [vRes, sRes] = await Promise.all([
-          fetch(`${WEBHOOK}?action=getVendors`),
+          fetch(`${WEBHOOK}?action=getVendors&pw=${apw()}`),
           fetch(`${WEBHOOK}?action=getStoreContacts`),
         ]);
         allVendors       = await vRes.json();
@@ -877,10 +883,10 @@
       try {
         // If store code changed, delete the old row first
         if (newCode !== oldStoreCode.toUpperCase()) {
-          await fetch(WEBHOOK + '?action=deleteStore&vendorCode=' + encodeURIComponent(vendorCode) + '&storeCode=' + encodeURIComponent(oldStoreCode));
+          await fetch(WEBHOOK + '?action=deleteStore&pw=' + apw() + '&vendorCode=' + encodeURIComponent(vendorCode) + '&storeCode=' + encodeURIComponent(oldStoreCode));
         }
         const payload = { vendorCode, storeCode: newCode, company, firstName, lastName, email };
-        const res  = await fetch(WEBHOOK + '?action=saveStore&payload=' + encodeURIComponent(JSON.stringify(payload)));
+        const res  = await fetch(WEBHOOK + '?action=saveStore&pw=' + apw() + '&payload=' + encodeURIComponent(JSON.stringify(payload)));
         const data = await res.json();
         if (data.status !== 'ok') throw new Error(data.message || 'Error');
         // Update in memory
@@ -901,7 +907,7 @@
     async function deleteStoreContact(vendorCode, storeCode) {
       if (!confirm('Delete store contact "' + storeCode + '"? This cannot be undone.')) return;
       try {
-        const res  = await fetch(WEBHOOK + '?action=deleteStore&vendorCode=' + encodeURIComponent(vendorCode) + '&storeCode=' + encodeURIComponent(storeCode));
+        const res  = await fetch(WEBHOOK + '?action=deleteStore&pw=' + apw() + '&vendorCode=' + encodeURIComponent(vendorCode) + '&storeCode=' + encodeURIComponent(storeCode));
         const data = await res.json();
         if (data.status !== 'ok') throw new Error(data.message || 'Error');
         allStoreContacts = allStoreContacts.filter(function(s) {
@@ -943,7 +949,7 @@
       const vendors = collectVendors();
       setVendorStatus('loading', 'Saving\u2026');
       try {
-        const url  = WEBHOOK + '?action=saveVendors&payload=' + encodeURIComponent(JSON.stringify(vendors));
+        const url  = WEBHOOK + '?action=saveVendors&pw=' + apw() + '&payload=' + encodeURIComponent(JSON.stringify(vendors));
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status === 'ok') {
@@ -994,7 +1000,7 @@
 
       try {
         // Get PAT from Apps Script
-        const tokenRes  = await fetch(`${WEBHOOK}?action=getUploadToken`);
+        const tokenRes  = await fetch(`${WEBHOOK}?action=getUploadToken&pw=${apw()}`);
         const tokenData = await tokenRes.json();
         if (tokenData.status !== 'ok') throw new Error(tokenData.message);
         const pat = tokenData.token;
@@ -1047,7 +1053,7 @@
 
     async function persistProduct(p) {
       try {
-        const url = `${WEBHOOK}?action=saveProduct&payload=${encodeURIComponent(JSON.stringify(p))}`;
+        const url = `${WEBHOOK}?action=saveProduct&pw=${apw()}&payload=${encodeURIComponent(JSON.stringify(p))}`;
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
@@ -1060,7 +1066,7 @@
 
     async function persistDeleteProduct(id) {
       try {
-        const url = `${WEBHOOK}?action=deleteProduct&id=${encodeURIComponent(id)}`;
+        const url = `${WEBHOOK}?action=deleteProduct&pw=${apw()}&id=${encodeURIComponent(id)}`;
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
@@ -1097,7 +1103,7 @@
       try {
         const [prodRes, vendorRes] = await Promise.all([
           fetch(`${WEBHOOK}?action=getProducts`),
-          fetch(`${WEBHOOK}?action=getVendors`),
+          fetch(`${WEBHOOK}?action=getVendors&pw=${apw()}`),
         ]);
         const data   = await prodRes.json();
         const vdata  = await vendorRes.json();
@@ -1354,7 +1360,7 @@
         for (let ci = 0; ci < chunks.length; ci++) {
           const append  = ci > 0;
           const payload = encodeURIComponent(JSON.stringify(chunks[ci]));
-          const url     = `${WEBHOOK}?action=saveProducts&append=${append}&payload=${payload}`;
+          const url     = `${WEBHOOK}?action=saveProducts&pw=${apw()}&append=${append}&payload=${payload}`;
           const res     = await fetch(url);
           const data    = await res.json();
           if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
@@ -1396,7 +1402,7 @@
       setOrdersStatus('loading', 'Loading orders\u2026');
       try {
         const [ordRes, storeRes] = await Promise.all([
-          fetch(WEBHOOK + '?action=getOrders'),
+          fetch(WEBHOOK + '?action=getOrders&pw=' + apw()),
           fetch(WEBHOOK + '?action=getStoreContacts'),
         ]);
         const ordData   = await ordRes.json();
@@ -1547,7 +1553,7 @@
     async function updateStatus(orderId, field, value) {
       try {
         const payload = JSON.stringify({ orderId, field, value });
-        const url     = WEBHOOK + '?action=updateOrderStatus&payload=' + encodeURIComponent(payload);
+        const url     = WEBHOOK + '?action=updateOrderStatus&pw=' + apw() + '&payload=' + encodeURIComponent(payload);
         const res     = await fetch(url);
         const data    = await res.json();
         if (data.status !== 'ok') throw new Error(data.message);
