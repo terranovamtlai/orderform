@@ -7,7 +7,7 @@ const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwvveBT8M11c
 /* ============================================================
    PRODUCT DATA
    - srp:          Suggested Retail Price per minimum order unit
-   - wholesale:    Dealer price per minimum order unit
+   - dealer:       Dealer price per minimum order unit
    - orderUnit:    What clients order in  (display / case / pack / …)
    - unitsPerOrder How many individual units are in one order unit
    - unitLabel:    Name for individual units  (pairs / units / …)
@@ -31,7 +31,7 @@ function fmt(n) {
 }
 
 function profitPct(p) {
-  return ((p.srp - p.wholesale) / p.srp * 100).toFixed(1);
+  return ((p.srp - p.dealer) / p.srp * 100).toFixed(1);
 }
 
 /* ============================================================
@@ -72,10 +72,10 @@ function renderProducts() {
     const escapedCat = cat.replace(/"/g, '&quot;');
     // Spacer before every category (including the first, to gap from the header)
     const availCount = catProducts.filter(p => p.available !== false && p.available !== 'false' && p.available !== 'FALSE').length;
-    allRows.push(`<tr class="cat-spacer${first ? ' cat-spacer-first' : ''}"><td colspan="7"></td></tr>`);
+    allRows.push(`<tr class="cat-spacer${first ? ' cat-spacer-first' : ''}"><td colspan="8"></td></tr>`);
     first = false;
     allRows.push(`<tr class="cat-row" onclick="toggleCatOrder(this)" data-cat="${escapedCat}">
-      <td colspan="7"><span class="cat-row-arrow">${expanded ? '▼' : '▶'}</span> ${cat} <span style="opacity:.6;font-weight:400">(${availCount})</span></td>
+      <td colspan="8"><span class="cat-row-arrow">${expanded ? '▼' : '▶'}</span> ${cat} <span style="opacity:.6;font-weight:400">(${availCount})</span></td>
     </tr>`);
     catProducts.forEach(p => {
       const row = makeProductRow(p);
@@ -108,7 +108,8 @@ function makeProductRow(p) {
       </td>
       <td><span class="srp-text">${fmt(p.srp)}</span></td>
       <td><span class="profit-badge">${profitPct(p)}%</span></td>
-      <td><span class="wholesale-text">${fmt(p.wholesale)}</span></td>
+      <td><span class="wholesale-text">${fmt(p.cost || 0)}</span></td>
+      <td><span class="wholesale-text">${fmt(p.dealer)}</span></td>
       <td class="col-qty">
         ${avail ? `
         <div class="qty-stepper">
@@ -150,16 +151,16 @@ function updateSummary() {
   totalsSection.hidden = false;
   btnSubmit.hidden     = false;
 
-  let totalOrderUnits = 0, totalIndividualUnits = 0, totalWholesale = 0, totalRetail = 0;
+  let totalOrderUnits = 0, totalIndividualUnits = 0, totalDealer = 0, totalRetail = 0;
 
   const listHTML = activeItems.map(p => {
     const qty   = order[p.id];
     const units = qty * p.unitsPerOrder;
-    const lineW = qty * p.unitsPerOrder * p.wholesale;
+    const lineW = qty * p.unitsPerOrder * p.dealer;
     const lineS = qty * p.unitsPerOrder * p.srp;
     totalOrderUnits      += qty;
     totalIndividualUnits += units;
-    totalWholesale       += lineW;
+    totalDealer       += lineW;
     totalRetail          += lineS;
     return `
       <li>
@@ -174,7 +175,7 @@ function updateSummary() {
 
   document.getElementById('tTotalPacks').textContent = totalOrderUnits;
   document.getElementById('tTotalPairs').textContent = totalIndividualUnits;
-  document.getElementById('tWholesale').textContent  = fmt(totalWholesale);
+  document.getElementById('tWholesale').textContent  = fmt(totalDealer);
   document.getElementById('tRetail').textContent     = fmt(totalRetail);
 }
 
@@ -450,23 +451,23 @@ let confirmedOrder = null;
 
 function buildOrderData() {
   const lines = [];
-  let totalOrderUnits = 0, totalIndividualUnits = 0, totalWholesale = 0, totalRetail = 0;
+  let totalOrderUnits = 0, totalIndividualUnits = 0, totalDealer = 0, totalRetail = 0;
   products.forEach(p => {
     const qty = order[p.id] || 0;
     if (!qty) return;
     const units = qty * p.unitsPerOrder;
-    const lineW = qty * p.unitsPerOrder * p.wholesale;
+    const lineW = qty * p.unitsPerOrder * p.dealer;
     const lineS = qty * p.unitsPerOrder * p.srp;
     totalOrderUnits      += qty;
     totalIndividualUnits += units;
-    totalWholesale       += lineW;
+    totalDealer       += lineW;
     totalRetail          += lineS;
     lines.push({ p, qty, units, lineW, lineS });
   });
-  return { lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail };
+  return { lines, totalOrderUnits, totalIndividualUnits, totalDealer, totalRetail };
 }
 
-function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail, storeCode, customerEmail, company, contactName }) {
+function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, totalDealer, totalRetail, storeCode, customerEmail, company, contactName }) {
   const storeRows = [
     company     ? ['Company',    company]    : null,
     storeCode   ? ['Store Code', storeCode]  : null,
@@ -488,7 +489,8 @@ function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, tot
       <td style="font-family:monospace;font-size:.78rem">${p.sku}</td>
       <td style="text-align:center;font-weight:700">${qty} <small style="font-weight:400;color:#718096">${p.orderUnit}${qty !== 1 ? 's' : ''}</small></td>
       <td style="text-align:center">${units} <small style="color:#718096">${p.unitLabel}</small></td>
-      <td style="text-align:right">${fmt(p.wholesale)}</td>
+      <td style="text-align:right">${fmt(p.cost || 0)}</td>
+      <td style="text-align:right">${fmt(p.dealer)}</td>
       <td style="text-align:right;font-weight:700">${fmt(lineW)}</td>
     </tr>
   `).join('');
@@ -502,7 +504,8 @@ function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, tot
           <th>SKU</th>
           <th style="text-align:center">Order Qty</th>
           <th style="text-align:center">Total Units</th>
-          <th style="text-align:right">Price / Unit</th>
+          <th style="text-align:right">Cost</th>
+          <th style="text-align:right">Dealer</th>
           <th style="text-align:right">Line Total</th>
         </tr>
       </thead>
@@ -511,7 +514,7 @@ function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, tot
     <div class="dialog-totals">
       <span class="dt-label">Total Order Units</span>      <span class="dt-value">${totalOrderUnits}</span>
       <span class="dt-label">Total Individual Units</span> <span class="dt-value">${totalIndividualUnits}</span>
-      <span class="dt-label">Wholesale Total</span>        <span class="dt-value">${fmt(totalWholesale)}</span>
+      <span class="dt-label">Dealer Total</span>           <span class="dt-value">${fmt(totalDealer)}</span>
       <span class="dt-label">Retail Value (SRP)</span>     <span class="dt-value dt-grand">${fmt(totalRetail)}</span>
     </div>
   `;
@@ -630,14 +633,14 @@ async function submitToGoogleSheet(data) {
       orderUnit:     p.orderUnit,
       qty,
       units,
-      wholesaleUnit: p.wholesale,
-      lineWholesale: lineW,
+      dealerUnit: p.dealer,
+      lineDealer: lineW,
       srpUnit:       p.srp,
       lineSRP:       lineS,
     })),
     totalOrderUnits:      data.totalOrderUnits,
     totalIndividualUnits: data.totalIndividualUnits,
-    totalWholesale:       data.totalWholesale,
+    totalDealer:       data.totalDealer,
     totalRetail:          data.totalRetail,
     vendorCode:           vendor ? vendor.code    : '',
     vendorCompany:        vendor ? vendor.company : '',
@@ -662,12 +665,12 @@ document.getElementById('btnCSV') && document.getElementById('btnCSV').addEventL
   const { lines } = confirmedOrder;
   const header = [
     'Product', 'SKU', 'Barcode', 'Order Unit', 'Order Qty', 'Total Units',
-    'SRP', 'Wholesale Price', 'Line Total (Wholesale)', 'Line Total (SRP)',
+    'SRP', 'Cost', 'Dealer Price', 'Line Total (Dealer)', 'Line Total (SRP)',
   ];
   const rows = lines.map(({ p, qty, units, lineW, lineS }) => [
     p.name, p.sku, p.barcode,
     p.orderUnit, qty, units,
-    p.srp.toFixed(2), p.wholesale.toFixed(2),
+    p.srp.toFixed(2), (p.cost || 0).toFixed(2), p.dealer.toFixed(2),
     lineW.toFixed(2), lineS.toFixed(2),
   ]);
 
@@ -692,7 +695,7 @@ document.getElementById('btnCSV') && document.getElementById('btnCSV').addEventL
    ============================================================ */
 document.getElementById('btnPrint') && document.getElementById('btnPrint').addEventListener('click', () => {
   if (!confirmedOrder) return;
-  const { lines, totalOrderUnits, totalIndividualUnits, totalWholesale, totalRetail } = confirmedOrder;
+  const { lines, totalOrderUnits, totalIndividualUnits, totalDealer, totalRetail } = confirmedOrder;
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const rows = lines.map(({ p, qty, units, lineW }) => `
@@ -701,7 +704,8 @@ document.getElementById('btnPrint') && document.getElementById('btnPrint').addEv
       <td>${p.sku}</td>
       <td style="text-align:center">${qty} ${p.orderUnit}${qty !== 1 ? 's' : ''}</td>
       <td style="text-align:center">${units} ${p.unitLabel}</td>
-      <td style="text-align:right">${fmt(p.wholesale)}</td>
+      <td style="text-align:right">${fmt(p.cost || 0)}</td>
+      <td style="text-align:right">${fmt(p.dealer)}</td>
       <td style="text-align:right;font-weight:700">${fmt(lineW)}</td>
     </tr>
   `).join('');
@@ -750,7 +754,8 @@ document.getElementById('btnPrint') && document.getElementById('btnPrint').addEv
         <th>Product</th><th>SKU</th>
         <th style="text-align:center">Order Qty</th>
         <th style="text-align:center">Total Units</th>
-        <th style="text-align:right">Unit Price</th>
+        <th style="text-align:right">Cost</th>
+        <th style="text-align:right">Dealer</th>
         <th style="text-align:right">Line Total</th>
       </tr>
     </thead>
@@ -759,7 +764,7 @@ document.getElementById('btnPrint') && document.getElementById('btnPrint').addEv
   <div class="totals">
     <span class="lbl">Total Order Units</span>      <span class="val">${totalOrderUnits}</span>
     <span class="lbl">Total Individual Units</span> <span class="val">${totalIndividualUnits}</span>
-    <span class="lbl">Wholesale Total</span>        <span class="val">${fmt(totalWholesale)}</span>
+    <span class="lbl">Dealer Total</span>           <span class="val">${fmt(totalDealer)}</span>
     <span class="lbl">Retail Value (SRP)</span>     <span class="val grand">${fmt(totalRetail)}</span>
   </div>
   <script>window.onload = () => { window.print(); }<\/script>
@@ -802,7 +807,7 @@ async function init() {
   }
 
   document.getElementById('productBody').innerHTML =
-    `<tr><td colspan="7" style="text-align:center;padding:40px;color:#718096">Loading products&hellip;</td></tr>`;
+    `<tr><td colspan="8" style="text-align:center;padding:40px;color:#718096">Loading products&hellip;</td></tr>`;
 
   try {
     const [vendorRes, prodRes] = await Promise.all([
@@ -825,7 +830,8 @@ async function init() {
         ...p,
         id:            Number(p.id),
         srp:           Number(p.srp),
-        wholesale:     Number(p.wholesale),
+        cost:          Number(p.cost || 0),
+        dealer:        Number(p.cost || 0) * 1.11,
         unitsPerOrder: Number(p.unitsPerOrder),
         available:     p.available !== false && p.available !== 'false' && p.available !== 'FALSE',
         category:      p.category || 'Gift Novelties',
@@ -853,7 +859,7 @@ function showLockedMessage() {
 
 function showCatalogueError(msg) {
   document.getElementById('productBody').innerHTML =
-    `<tr><td colspan="7" style="text-align:center;padding:40px;color:#718096">${msg}</td></tr>`;
+    `<tr><td colspan="8" style="text-align:center;padding:40px;color:#718096">${msg}</td></tr>`;
 }
 
 init();
