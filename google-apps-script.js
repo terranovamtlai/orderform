@@ -259,6 +259,7 @@ function handleSubmitOrder(e) {
       'SRP/Unit ($)','Line SRP ($)',
       'Order Sent','Invoice Sent','Payment Received','Cancelled',
       'Company','Vendor Code','Store Code','Customer Email','Comments',
+      'Agent Name','Agent Email',
     ];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
@@ -289,6 +290,8 @@ function handleSubmitOrder(e) {
     data.storeCode      || '',    // col 19
     data.customerEmail  || '',    // col 20
     data.comments       || '',    // col 21
+    data.agentName      || '',    // col 22
+    data.agentEmail     || '',    // col 23
   ]);
   sheet.getRange(sheet.getLastRow(), 1, 1, 12)
        .setFontStyle('italic')
@@ -318,6 +321,7 @@ function sendOrderEmail(data) {
     + (data.storeCode     ? '<tr><td style="color:#4a6080;font-size:.75rem;padding:2px 0">Store Code</td><td style="color:#1a202c;font-size:.85rem;font-family:monospace;letter-spacing:.05em">' + data.storeCode + '</td></tr>' : '')
     + (data.contactName   ? '<tr><td style="color:#4a6080;font-size:.75rem;padding:2px 0">Contact</td><td style="color:#1a202c;font-size:.85rem">' + data.contactName + '</td></tr>' : '')
     + (data.customerEmail ? '<tr><td style="color:#4a6080;font-size:.75rem;padding:2px 0">Email</td><td style="color:#1a202c;font-size:.85rem">' + data.customerEmail + '</td></tr>' : '')
+    + (data.agentName     ? '<tr><td style="color:#4a6080;font-size:.75rem;padding:2px 0">Agent</td><td style="color:#1a202c;font-size:.85rem">' + data.agentName + '</td></tr>' : '')
     + '</table>'
     + '</div>'
     + '<div style="padding:24px">'
@@ -340,6 +344,9 @@ function sendOrderEmail(data) {
   MailApp.sendEmail({ to: ORDER_EMAIL, subject: 'New Terra Nova Order — ' + data.orderId, htmlBody: html });
   if (data.customerEmail) {
     MailApp.sendEmail({ to: data.customerEmail, subject: 'Your Terra Nova Order Confirmation — ' + data.orderId, htmlBody: html });
+  }
+  if (data.agentEmail) {
+    MailApp.sendEmail({ to: data.agentEmail, subject: 'New Terra Nova Order — ' + data.orderId, htmlBody: html });
   }
 }
 
@@ -378,6 +385,8 @@ function handleGetOrders() {
         current.storeCode            = row[18] || '';
         current.customerEmail        = row[19] || '';
         current.comments             = row[20] || '';
+        current.agentName            = row[21] || '';
+        current.agentEmail           = row[22] || '';
         orders.push(current);
         current = null;
       }
@@ -492,7 +501,14 @@ function handleGetVendor(e) {
     var rowStoreCode = String(rows[i][2] || '').trim();
     // Match vendor-level rows only (no storeCode in col 2)
     if (rowCode === code && !rowStoreCode) {
-      return json({ status: 'ok', code: rows[i][0], company: rows[i][1] });
+      return json({
+        status:    'ok',
+        code:      rows[i][0],
+        company:   rows[i][1],
+        firstName: rows[i][3] || '',
+        lastName:  rows[i][4] || '',
+        email:     rows[i][5] || '',
+      });
     }
   }
   return json({ status: 'notfound' });
@@ -507,7 +523,7 @@ function handleGetVendors() {
   return json(rows.slice(1).filter(function(r) {
     return r[0] && !String(r[2] || '').trim();
   }).map(function(r) {
-    return { code: r[0], company: r[1] };
+    return { code: r[0], company: r[1], firstName: r[3] || '', lastName: r[4] || '', email: r[5] || '' };
   }));
 }
 
@@ -536,7 +552,7 @@ function handleSaveVendors(e) {
 
   // Vendor-level rows (storeCode is blank)
   vendors.forEach(function(v) {
-    sheet.appendRow([v.code, v.company, '', '', '', '']);
+    sheet.appendRow([v.code, v.company, '', v.firstName || '', v.lastName || '', v.email || '']);
   });
 
   // Re-append store contact rows

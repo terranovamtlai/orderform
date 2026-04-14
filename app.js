@@ -653,6 +653,8 @@ async function submitToGoogleSheet(data) {
     customerEmail:        data.customerEmail || '',
     contactName:          currentStore ? (currentStore.firstName + ' ' + currentStore.lastName).trim() : '',
     comments:             data.comments || '',
+    agentName:            vendor ? [vendor.firstName, vendor.lastName].filter(Boolean).join(' ') : '',
+    agentEmail:           vendor ? vendor.email || '' : '',
   };
 
   // Use GET + URL params — POST bodies are silently dropped by Google's
@@ -827,7 +829,9 @@ async function init() {
     }
     vendor = vendorData;
     const badge = document.getElementById('vendorBadge');
-    badge.querySelector('.vendor-banner-name').textContent = vendorData.company;
+    const agentName = [vendorData.firstName, vendorData.lastName].filter(Boolean).join(' ');
+    badge.querySelector('.vendor-banner-name').textContent =
+      agentName ? vendorData.company + ' \u2014 ' + agentName : vendorData.company;
     badge.hidden = false;
 
     const data = await prodRes.json();

@@ -921,12 +921,20 @@
         +   '</button>'
         + '</td>'
         + '<td><code style="font-size:.8rem;letter-spacing:.05em">' + ec + '</code>' + badge + '</td>'
-        + '<td colspan="2"><div style="display:flex;align-items:center;gap:8px">'
-        +   '<input type="text" class="f-vcompany" value="' + escH(v.company) + '" placeholder="Company name" style="width:50%;min-width:120px;flex:0 0 auto" />'
-        +   '<div style="display:flex;gap:6px;flex-wrap:nowrap">'
-        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="copyVendorURL(\'' + ec + '\', this)">Get URL</button>'
-        +     '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="window.open(\'' + escH(getOrderFormURL(v.code)) + '\', \'_blank\')">Test URL</button>'
-        +     '<button class="btn-x-delete" title="Delete vendor" onclick="deleteVendor(\'' + ec + '\')">&times;</button>'
+        + '<td colspan="2"><div style="display:flex;flex-direction:column;gap:6px">'
+        +   '<div style="display:flex;align-items:center;gap:8px">'
+        +     '<input type="text" class="f-vcompany" value="' + escH(v.company) + '" placeholder="Company name" style="width:50%;min-width:120px;flex:0 0 auto" />'
+        +     '<div style="display:flex;gap:6px;flex-wrap:nowrap">'
+        +       '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="copyVendorURL(\'' + ec + '\', this)">Get URL</button>'
+        +       '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="window.open(\'' + escH(getOrderFormURL(v.code)) + '\', \'_blank\')">Test URL</button>'
+        +       '<button class="btn-x-delete" title="Delete vendor" onclick="deleteVendor(\'' + ec + '\')">&times;</button>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div style="display:flex;align-items:center;gap:6px">'
+        +     '<span style="font-size:.75rem;color:var(--muted);width:42px;flex-shrink:0">Agent:</span>'
+        +     '<input type="text"  class="f-vfirstname" value="' + escH(v.firstName || '') + '" placeholder="First name"   style="flex:1;min-width:80px" />'
+        +     '<input type="text"  class="f-vlastname"  value="' + escH(v.lastName  || '') + '" placeholder="Last name"    style="flex:1;min-width:80px" />'
+        +     '<input type="email" class="f-vemail"     value="' + escH(v.email     || '') + '" placeholder="Agent email"  style="flex:2;min-width:140px" />'
         +   '</div>'
         + '</div></td>'
         + '</tr>';
@@ -1047,7 +1055,7 @@
 
     function addVendor() {
       const code = generateCode();
-      allVendors.push({ code, company: '' });
+      allVendors.push({ code, company: '', firstName: '', lastName: '', email: '' });
       renderVendorTable();
     }
 
@@ -1055,8 +1063,11 @@
       return Array.from(document.querySelectorAll('#vendorBody .vendor-row'))
         .map(function(tr) {
           return {
-            code:    tr.querySelector('code').textContent.trim(),
-            company: (tr.querySelector('.f-vcompany') || {}).value || '',
+            code:      tr.querySelector('code').textContent.trim(),
+            company:   (tr.querySelector('.f-vcompany')   || {}).value || '',
+            firstName: (tr.querySelector('.f-vfirstname') || {}).value || '',
+            lastName:  (tr.querySelector('.f-vlastname')  || {}).value || '',
+            email:     (tr.querySelector('.f-vemail')     || {}).value || '',
           };
         })
         .filter(function(v) { return v.code && v.company; });
@@ -1663,6 +1674,7 @@
           ${order.storeCode   ? '<div><span class="om-label">Store Code</span><span class="store-code-badge">' + escH(order.storeCode) + '</span></div>' : ''}
           ${order.contactName ? '<div><span class="om-label">Contact</span><span>' + escH(order.contactName) + '</span></div>' : ''}
           ${order.customerEmail ? '<div><span class="om-label">Email</span><span>' + escH(order.customerEmail) + '</span></div>' : ''}
+          ${order.agentName   ? '<div><span class="om-label">Agent</span><span>' + escH(order.agentName) + '</span></div>' : ''}
         </div>
         <div class="om-status">
           <label class="om-cb-label"><input type="checkbox" id="om-orderSent"       ${order.orderSent       ? 'checked' : ''}> Order Sent</label>
