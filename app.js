@@ -104,7 +104,7 @@ function makeProductRow(p) {
       <td><span class="style-text">${p.style || ''}</span></td>
       <td>
         <div class="barcode-text">${p.barcode}</div>
-        <div><span class="sku-badge">${p.sku}</span></div>
+        <div class="barcode-text">${p.sku}</div>
       </td>
       <td><span class="wholesale-text">${fmt(p.cost || 0)}</span></td>
       <td><span class="wholesale-text">${fmt(p.dealer)}</span></td>
