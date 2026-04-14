@@ -614,7 +614,6 @@
           <div class="toolbar-actions">
             <button class="btn btn-secondary" onclick="loadVendors()">&#8635; Refresh</button>
             <button class="btn btn-primary"   onclick="addVendor()">+ Add Vendor</button>
-            <button class="btn btn-success"   onclick="saveVendors()">&#10003; Save to Sheet</button>
           </div>
         </div>
         <div class="status-bar" id="vendorStatusBar"></div>
@@ -622,9 +621,14 @@
           <table>
             <thead>
               <tr>
-                <th style="width:36px"></th>
-                <th style="width:160px">Code</th>
-                <th colspan="2">Company Name / Details</th>
+                <th style="width:24px"></th>
+                <th>Company</th>
+                <th style="width:110px">First Name</th>
+                <th style="width:110px">Last Name</th>
+                <th>Agent Email</th>
+                <th colspan="2" style="text-align:center">URL</th>
+                <th style="width:110px">Code</th>
+                <th style="width:32px"></th>
               </tr>
             </thead>
             <tbody id="vendorBody"></tbody>
@@ -885,7 +889,7 @@
     function renderVendorTable() {
       const tbody = document.getElementById('vendorBody');
       if (!allVendors.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#718096">No vendors yet. Click + Add Vendor to get started.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#718096">No vendors yet. Click + Add Vendor to get started.</td></tr>';
         return;
       }
       const rows = [];
@@ -899,7 +903,7 @@
           } else {
             rows.push('<tr class="store-contact-row">'
               + '<td></td>'
-              + '<td colspan="3" style="padding:10px 16px;color:var(--muted);font-style:italic;font-size:.82rem">No store contacts registered yet.</td>'
+              + '<td colspan="8" style="padding:10px 16px;color:var(--muted);font-style:italic;font-size:.82rem">No store contacts registered yet.</td>'
               + '</tr>');
           }
         }
@@ -908,35 +912,27 @@
     }
 
     function makeVendorRow(v, stores, expanded) {
-      const count  = stores.length;
-      const badge  = count ? '<span class="store-count-badge">' + count + '</span>' : '';
-      const ec     = escH(v.code);
-      const arrow  = '&#9654;';   // filled right-triangle; CSS rotates it when .open
-      return '<tr class="vendor-row">'
-        + '<td style="width:36px;text-align:center;padding:0 4px">'
+      const count = stores.length;
+      const badge = count ? '<span class="store-count-badge">' + count + '</span>' : '';
+      const ec    = escH(v.code);
+      return '<tr class="vendor-row" data-code="' + ec + '">'
+        + '<td style="width:24px;text-align:center;padding:0 2px">'
         +   '<button class="vendor-expand-btn' + (expanded ? ' open' : '') + '"'
         +     ' onclick="toggleVendorExpand(\'' + ec + '\')"'
-        +     ' title="' + (expanded ? 'Collapse' : 'Expand store contacts') + '">'
-        +     arrow
-        +   '</button>'
+        +     ' title="' + (expanded ? 'Collapse' : 'Expand store contacts') + '">&#9654;</button>'
         + '</td>'
-        + '<td><code style="font-size:.8rem;letter-spacing:.05em">' + ec + '</code>' + badge + '</td>'
-        + '<td colspan="2"><div style="display:flex;flex-direction:column;gap:6px">'
-        +   '<div style="display:flex;align-items:center;gap:8px">'
-        +     '<input type="text" class="f-vcompany" value="' + escH(v.company) + '" placeholder="Company name" style="width:50%;min-width:120px;flex:0 0 auto" />'
-        +     '<div style="display:flex;gap:6px;flex-wrap:nowrap">'
-        +       '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="copyVendorURL(\'' + ec + '\', this)">Get URL</button>'
-        +       '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px;white-space:nowrap" onclick="window.open(\'' + escH(getOrderFormURL(v.code)) + '\', \'_blank\')">Test URL</button>'
-        +       '<button class="btn-x-delete" title="Delete vendor" onclick="deleteVendor(\'' + ec + '\')">&times;</button>'
-        +     '</div>'
-        +   '</div>'
-        +   '<div style="display:flex;align-items:center;gap:6px">'
-        +     '<span style="font-size:.75rem;color:var(--muted);width:42px;flex-shrink:0">Agent:</span>'
-        +     '<input type="text"  class="f-vfirstname" value="' + escH(v.firstName || '') + '" placeholder="First name"   style="flex:1;min-width:80px" />'
-        +     '<input type="text"  class="f-vlastname"  value="' + escH(v.lastName  || '') + '" placeholder="Last name"    style="flex:1;min-width:80px" />'
-        +     '<input type="email" class="f-vemail"     value="' + escH(v.email     || '') + '" placeholder="Agent email"  style="flex:2;min-width:140px" />'
-        +   '</div>'
-        + '</div></td>'
+        + '<td><input type="text"  class="f-vcompany"   value="' + escH(v.company        || '') + '" placeholder="Company name" /></td>'
+        + '<td><input type="text"  class="f-vfirstname" value="' + escH(v.firstName      || '') + '" placeholder="First name"   /></td>'
+        + '<td><input type="text"  class="f-vlastname"  value="' + escH(v.lastName       || '') + '" placeholder="Last name"    /></td>'
+        + '<td><input type="email" class="f-vemail"     value="' + escH(v.email          || '') + '" placeholder="Agent email"  /></td>'
+        + '<td style="white-space:nowrap;padding:4px 6px">'
+        +   '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="copyVendorURL(\'' + ec + '\', this)">Copy URL</button>'
+        + '</td>'
+        + '<td style="white-space:nowrap;padding:4px 6px">'
+        +   '<button class="btn btn-secondary" style="font-size:.75rem;padding:4px 10px" onclick="window.open(\'' + escH(getOrderFormURL(v.code)) + '\', \'_blank\')">Test URL</button>'
+        + '</td>'
+        + '<td style="padding:4px 8px"><code style="font-size:.75rem;letter-spacing:.05em;color:var(--muted)">' + ec + '</code>' + badge + '</td>'
+        + '<td style="text-align:center;padding:0 4px"><button class="btn-x-delete" title="Delete vendor" onclick="deleteVendor(\'' + ec + '\')">&times;</button></td>'
         + '</tr>';
     }
 
@@ -944,9 +940,9 @@
       const vc = escH(s.vendorCode || '');
       const sc = escH(s.storeCode  || '');
       return '<tr class="store-contact-row" data-vendor="' + vc + '" data-store="' + sc + '">'
-        + '<td style="width:36px"></td>'
-        + '<td><span class="store-code-badge">' + sc + '</span></td>'
-        + '<td colspan="2"><div style="display:flex;align-items:center;gap:10px">'
+        + '<td></td>'
+        + '<td colspan="8"><div style="display:flex;align-items:center;gap:10px;padding:0 4px">'
+        +   '<span class="store-code-badge">' + sc + '</span>'
         +   '<span style="font-weight:600;white-space:nowrap">' + escH(s.firstName) + ' ' + escH(s.lastName) + '</span>'
         +   '<span style="font-size:.78rem;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escH(s.email) + '</span>'
         +   '<div style="display:flex;gap:6px;flex-wrap:nowrap;flex-shrink:0">'
@@ -1046,24 +1042,28 @@
       }
     }
 
-    function deleteVendor(code) {
+    async function deleteVendor(code) {
       if (!confirm('Delete vendor "' + code + '"? This removes the vendor from the list (store contacts are kept).')) return;
       allVendors = allVendors.filter(function(v) { return v.code.toUpperCase() !== code.toUpperCase(); });
       expandedVendors.delete(code);
       renderVendorTable();
+      await saveVendors();
     }
 
     function addVendor() {
       const code = generateCode();
       allVendors.push({ code, company: '', firstName: '', lastName: '', email: '' });
       renderVendorTable();
+      // Focus the company input on the new row
+      const newRow = document.querySelector('.vendor-row[data-code="' + code + '"]');
+      if (newRow) { const inp = newRow.querySelector('.f-vcompany'); if (inp) inp.focus(); }
     }
 
     function collectVendors() {
       return Array.from(document.querySelectorAll('#vendorBody .vendor-row'))
         .map(function(tr) {
           return {
-            code:      tr.querySelector('code').textContent.trim(),
+            code:      tr.dataset.code || '',
             company:   (tr.querySelector('.f-vcompany')   || {}).value || '',
             firstName: (tr.querySelector('.f-vfirstname') || {}).value || '',
             lastName:  (tr.querySelector('.f-vlastname')  || {}).value || '',
@@ -1083,12 +1083,25 @@
         if (data.status === 'ok') {
           allVendors = vendors;
           setVendorStatus('success', '\u2713 ' + vendors.length + ' vendor(s) saved.');
-          toast('Vendors saved!', 'success');
+        } else {
+          setVendorStatus('error', 'Save failed.');
         }
       } catch (err) {
         setVendorStatus('error', 'Could not save vendors: ' + err.message);
       }
     }
+
+    // Auto-save: debounce field changes so we don't fire on every keystroke
+    let vendorSaveTimer = null;
+    function scheduleVendorSave() {
+      clearTimeout(vendorSaveTimer);
+      vendorSaveTimer = setTimeout(saveVendors, 1500);
+    }
+    document.getElementById('vendorBody').addEventListener('input', function(e) {
+      if (e.target.matches('.f-vcompany, .f-vfirstname, .f-vlastname, .f-vemail')) {
+        scheduleVendorSave();
+      }
+    });
 
     function copyVendorURL(code, btn) {
       const url = getOrderFormURL(code);
