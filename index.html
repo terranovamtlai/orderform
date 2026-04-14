@@ -25,7 +25,8 @@
 
   <!-- Vendor name banner -->
   <div class="vendor-banner" id="vendorBadge" hidden>
-    <span class="vendor-banner-name"></span>
+    <span class="vendor-banner-company" id="vendorBannerCompany"></span>
+    <span class="vendor-banner-agent" id="vendorBannerAgent" hidden></span>
   </div>
 
   <!-- Locked: shown when no valid vendor code in URL -->
@@ -68,6 +69,11 @@
         <div class="panel-head">
           <h2>Order Summary</h2>
           <button class="btn-clear" id="btnClear">Clear All</button>
+        </div>
+
+        <div class="panel-agent" id="panelAgent" hidden>
+          <span class="panel-agent-label">Agent</span>
+          <span class="panel-agent-name" id="panelAgentName"></span>
         </div>
 
         <div class="panel-empty" id="panelEmpty">

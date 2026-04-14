@@ -467,12 +467,13 @@ function buildOrderData() {
   return { lines, totalOrderUnits, totalIndividualUnits, totalDealer, totalRetail };
 }
 
-function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, totalDealer, totalRetail, storeCode, customerEmail, company, contactName }) {
+function buildDialogBodyHTML({ lines, totalOrderUnits, totalIndividualUnits, totalDealer, totalRetail, storeCode, customerEmail, company, contactName, agentName }) {
   const storeRows = [
     company     ? ['Company',    company]    : null,
     storeCode   ? ['Store Code', storeCode]  : null,
     contactName ? ['Contact',    contactName]: null,
     customerEmail ? ['Email',    customerEmail] : null,
+    agentName   ? ['Agent',      agentName]  : null,
   ].filter(Boolean).map(([label, val]) => `
     <tr><th>${label}</th><td>${val}</td></tr>
   `).join('');
@@ -533,6 +534,7 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
   data.customerEmail = currentStore.email;
   data.company       = currentStore.company || '';
   data.contactName   = currentStore.firstName ? currentStore.firstName + ' ' + currentStore.lastName : '';
+  data.agentName     = vendor ? [vendor.firstName, vendor.lastName].filter(Boolean).join(' ') : '';
 
   // Populate body
   document.getElementById('dialogBody').innerHTML = buildDialogBodyHTML(data);
@@ -828,11 +830,21 @@ async function init() {
       return;
     }
     vendor = vendorData;
-    const badge = document.getElementById('vendorBadge');
     const agentName = [vendorData.firstName, vendorData.lastName].filter(Boolean).join(' ');
-    badge.querySelector('.vendor-banner-name').textContent =
-      agentName ? vendorData.company + ' \u2014 ' + agentName : vendorData.company;
+    const badge = document.getElementById('vendorBadge');
+    document.getElementById('vendorBannerCompany').textContent = vendorData.company;
+    const agentSpan = document.getElementById('vendorBannerAgent');
+    if (agentName) {
+      agentSpan.textContent = 'Agent: ' + agentName;
+      agentSpan.hidden = false;
+    }
     badge.hidden = false;
+
+    // Show agent in order panel
+    if (agentName) {
+      document.getElementById('panelAgentName').textContent = agentName;
+      document.getElementById('panelAgent').hidden = false;
+    }
 
     const data = await prodRes.json();
     if (Array.isArray(data) && data.length > 0) {

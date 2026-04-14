@@ -80,13 +80,22 @@ body {
   border-bottom: 3px solid var(--navy-lt);
   text-align: center;
   padding: 10px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
-.vendor-banner-name {
+.vendor-banner-company {
   font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: .04em;
   text-transform: uppercase;
   color: #e8d5b7;
+}
+.vendor-banner-agent {
+  font-size: .8rem;
+  color: rgba(255,255,255,.65);
+  letter-spacing: .03em;
 }
 
 /* ============================================================
@@ -813,6 +822,27 @@ body {
 /* ============================================================
    STORE INFO BAR (order panel)
    ============================================================ */
+.panel-agent {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #f7f9fc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-agent-label {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+.panel-agent-name {
+  font-size: .82rem;
+  color: var(--text);
+  font-weight: 600;
+}
 .store-info-bar {
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
