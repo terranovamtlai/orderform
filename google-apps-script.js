@@ -412,24 +412,28 @@ function handleUpdateOrderLines(e) {
   var sheet = ss.getSheetByName(ORDERS_SHEET);
   if (!sheet) return json({ status: 'error', message: 'Orders sheet not found' });
 
-  var data = sheet.getDataRange().getValues();
+  var data        = sheet.getDataRange().getValues();
+  var rowsToDelete = [];
+
   for (var i = 1; i < data.length; i++) {
     var rowOrderId = String(data[i][1]);
 
     if (rowOrderId === orderId && String(data[i][2]) !== '') {
-      // Line row — update qty, units, lineDealer, lineSRP
+      // Line row — update or mark for deletion
+      var lineName = String(data[i][2]);
       var line = null;
       for (var j = 0; j < lines.length; j++) {
-        if (lines[j].name === String(data[i][2])) { line = lines[j]; break; }
+        if (lines[j].name === lineName) { line = lines[j]; break; }
       }
       if (line) {
         sheet.getRange(i + 1, 7).setValue(line.qty);
         sheet.getRange(i + 1, 8).setValue(line.units);
         sheet.getRange(i + 1, 10).setValue(line.lineDealer);
         sheet.getRange(i + 1, 12).setValue(line.lineSRP);
+      } else {
+        rowsToDelete.push(i + 1); // removed by user
       }
     } else if (rowOrderId === orderId + ' \u2014 TOTAL') {
-      // TOTAL row — recalculate sums
       var tQty    = lines.reduce(function(s, l) { return s + l.qty; }, 0);
       var tUnits  = lines.reduce(function(s, l) { return s + l.units; }, 0);
       var tDealer = lines.reduce(function(s, l) { return s + l.lineDealer; }, 0);
@@ -441,6 +445,12 @@ function handleUpdateOrderLines(e) {
       break;
     }
   }
+
+  // Delete from bottom to top so row indices stay valid
+  for (var k = rowsToDelete.length - 1; k >= 0; k--) {
+    sheet.deleteRow(rowsToDelete[k]);
+  }
+
   return json({ status: 'ok' });
 }
 

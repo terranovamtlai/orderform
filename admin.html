@@ -334,6 +334,12 @@
       font-family: inherit; color: var(--text);
     }
     .om-qty-input:focus { outline: none; border-color: var(--navy); }
+    .om-del-btn {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 1.1rem; padding: 0 4px; line-height: 1;
+      border-radius: 3px;
+    }
+    .om-del-btn:hover { color: var(--red, #e53e3e); }
     .om-lines-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
     .om-lines-table th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; padding: 6px 8px; border-bottom: 2px solid var(--border); }
     .om-lines-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
@@ -1631,7 +1637,7 @@
         const unitsPerQty    = l.qty > 0 ? l.units / l.qty : 0;
         const dealerPerUnit  = l.units > 0 ? l.lineDealer / l.units : 0;
         const srpPerUnit     = l.units > 0 ? l.lineSRP    / l.units : 0;
-        return '<tr>'
+        return '<tr data-line-row="' + idx + '">'
           + '<td>' + escH(l.name) + '</td>'
           + '<td style="font-size:.78rem;color:var(--muted)">' + escH(l.sku || '') + '</td>'
           + '<td style="text-align:center">'
@@ -1639,12 +1645,16 @@
           +   ' data-idx="' + idx + '"'
           +   ' data-units-per-qty="' + unitsPerQty + '"'
           +   ' data-dealer-per-unit="' + dealerPerUnit + '"'
-          +   ' data-srp-per-unit="' + srpPerUnit + '">'
+          +   ' data-srp-per-unit="' + srpPerUnit + '"'
+          +   ' oninput="recalcOrderModalRow(this)">'
           +   ' <small style="color:var(--muted)">' + escH(l.orderUnit) + '</small>'
           + '</td>'
           + '<td style="text-align:center" class="om-line-units-' + idx + '">' + l.units + '</td>'
           + '<td style="text-align:right" class="om-line-dealer-' + idx + '">$' + Number(l.lineDealer).toFixed(2) + '</td>'
           + '<td style="text-align:right" class="om-line-srp-' + idx + '">$' + Number(l.lineSRP).toFixed(2) + '</td>'
+          + '<td style="text-align:center">'
+          +   '<button class="om-del-btn" onclick="deleteOrderModalLine(' + idx + ')" title="Remove line">&times;</button>'
+          + '</td>'
           + '</tr>';
       }).join('');
 
@@ -1672,18 +1682,60 @@
             <th style="text-align:center">Total Units</th>
             <th style="text-align:right">Line Dealer</th>
             <th style="text-align:right">Line SRP</th>
+            <th style="width:32px"></th>
           </tr></thead>
           <tbody>${productRows}</tbody>
         </table>
         <div class="om-totals">
-          <span>Total Order Units</span>   <strong>${order.totalOrderUnits || '—'}</strong>
-          <span>Total Individual Units</span> <strong>${order.totalIndividualUnits || '—'}</strong>
-          <span>Dealer Total</span>        <strong>$${Number(order.totalDealer).toFixed(2)}</strong>
-          <span>Retail Value (SRP)</span>  <strong style="color:var(--green)">$${Number(order.totalRetail).toFixed(2)}</strong>
+          <span>Total Order Units</span>     <strong id="om-total-qty">${order.totalOrderUnits || '—'}</strong>
+          <span>Total Individual Units</span> <strong id="om-total-units">${order.totalIndividualUnits || '—'}</strong>
+          <span>Dealer Total</span>           <strong id="om-total-dealer">$${Number(order.totalDealer).toFixed(2)}</strong>
+          <span>Retail Value (SRP)</span>     <strong id="om-total-srp" style="color:var(--green)">$${Number(order.totalRetail).toFixed(2)}</strong>
         </div>
       `;
 
       document.getElementById('orderModal').showModal();
+    }
+
+    function recalcOrderModalRow(input) {
+      const idx           = parseInt(input.dataset.idx);
+      const newQty        = Math.max(1, parseInt(input.value) || 1);
+      const unitsPerQty   = parseFloat(input.dataset.unitsPerQty)   || 0;
+      const dealerPerUnit = parseFloat(input.dataset.dealerPerUnit) || 0;
+      const srpPerUnit    = parseFloat(input.dataset.srpPerUnit)    || 0;
+      const newUnits      = Math.round(newQty * unitsPerQty);
+      document.querySelector('.om-line-units-'  + idx).textContent = newUnits;
+      document.querySelector('.om-line-dealer-' + idx).textContent = '$' + (newQty * unitsPerQty * dealerPerUnit).toFixed(2);
+      document.querySelector('.om-line-srp-'    + idx).textContent = '$' + (newQty * unitsPerQty * srpPerUnit).toFixed(2);
+      recalcOrderModalTotals();
+    }
+
+    function recalcOrderModalTotals() {
+      var tQty = 0, tUnits = 0, tDealer = 0, tSRP = 0;
+      document.querySelectorAll('.om-qty-input').forEach(function(input) {
+        if (input.closest('tr').classList.contains('om-deleted')) return;
+        const newQty        = Math.max(1, parseInt(input.value) || 1);
+        const unitsPerQty   = parseFloat(input.dataset.unitsPerQty)   || 0;
+        const dealerPerUnit = parseFloat(input.dataset.dealerPerUnit) || 0;
+        const srpPerUnit    = parseFloat(input.dataset.srpPerUnit)    || 0;
+        tQty    += newQty;
+        tUnits  += Math.round(newQty * unitsPerQty);
+        tDealer += newQty * unitsPerQty * dealerPerUnit;
+        tSRP    += newQty * unitsPerQty * srpPerUnit;
+      });
+      document.getElementById('om-total-qty').textContent    = tQty;
+      document.getElementById('om-total-units').textContent  = tUnits;
+      document.getElementById('om-total-dealer').textContent = '$' + tDealer.toFixed(2);
+      document.getElementById('om-total-srp').textContent    = '$' + tSRP.toFixed(2);
+    }
+
+    function deleteOrderModalLine(idx) {
+      const l  = editingOrder.lines[idx];
+      if (!confirm('Remove "' + l.name + '" from this order?')) return;
+      const tr = document.querySelector('[data-line-row="' + idx + '"]');
+      tr.classList.add('om-deleted');
+      tr.style.display = 'none';
+      recalcOrderModalTotals();
     }
 
     async function saveOrderModal() {
@@ -1701,20 +1753,23 @@
         comments:        document.getElementById('om-comments-input').value.trim(),
       };
 
-      // Collect updated line quantities
-      const updatedLines = Array.from(document.querySelectorAll('.om-qty-input')).map(function(input) {
-        const idx          = parseInt(input.dataset.idx);
-        const l            = editingOrder.lines[idx];
-        const newQty       = Math.max(1, parseInt(input.value) || 1);
-        const unitsPerQty  = parseFloat(input.dataset.unitsPerQty)   || 0;
-        const dealerPerUnit= parseFloat(input.dataset.dealerPerUnit) || 0;
-        const srpPerUnit   = parseFloat(input.dataset.srpPerUnit)    || 0;
-        const newUnits     = Math.round(newQty * unitsPerQty);
-        return { name: l.name, qty: newQty, units: newUnits,
-                 lineDealer: newQty * unitsPerQty * dealerPerUnit,
-                 lineSRP:    newQty * unitsPerQty * srpPerUnit };
-      });
-      const linesChanged = updatedLines.some(function(l, idx) { return l.qty !== editingOrder.lines[idx].qty; });
+      // Collect updated line quantities (excluding deleted rows)
+      const updatedLines = Array.from(document.querySelectorAll('.om-qty-input'))
+        .filter(function(input) { return !input.closest('tr').classList.contains('om-deleted'); })
+        .map(function(input) {
+          const idx           = parseInt(input.dataset.idx);
+          const l             = editingOrder.lines[idx];
+          const newQty        = Math.max(1, parseInt(input.value) || 1);
+          const unitsPerQty   = parseFloat(input.dataset.unitsPerQty)   || 0;
+          const dealerPerUnit = parseFloat(input.dataset.dealerPerUnit) || 0;
+          const srpPerUnit    = parseFloat(input.dataset.srpPerUnit)    || 0;
+          const newUnits      = Math.round(newQty * unitsPerQty);
+          return { name: l.name, qty: newQty, units: newUnits,
+                   lineDealer: newQty * unitsPerQty * dealerPerUnit,
+                   lineSRP:    newQty * unitsPerQty * srpPerUnit };
+        });
+      const linesChanged = updatedLines.length !== editingOrder.lines.length
+        || updatedLines.some(function(l, i) { return l.qty !== editingOrder.lines.find(function(ol) { return ol.name === l.name; }).qty; });
 
       try {
         // Save status fields
