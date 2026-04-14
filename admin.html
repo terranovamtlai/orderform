@@ -214,9 +214,9 @@
 
     /* ── Orders table ── */
     #ordersTable thead th { text-align: center; white-space: nowrap; }
+    #ordersTable thead th:nth-child(1),
     #ordersTable thead th:nth-child(2),
-    #ordersTable thead th:nth-child(3),
-    #ordersTable thead th:nth-child(4) { text-align: left; }
+    #ordersTable thead th:nth-child(3) { text-align: left; }
 
     /* Order group header rows */
     .order-group-row { cursor: pointer; user-select: none; }
@@ -254,6 +254,90 @@
     }
     .btn-cancel-order:hover { background: var(--red); color: #fff; }
     tr.cancelled-row { opacity: .45; }
+
+    .btn-view-order {
+      font-size: .72rem;
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      cursor: pointer;
+      color: var(--navy);
+      font-weight: 600;
+    }
+    .btn-view-order:hover { background: var(--navy); color: #fff; }
+
+    /* ── Order modal ── */
+    .order-modal {
+      width: min(680px, 96vw);
+      max-height: 88vh;
+      border: none;
+      border-radius: 10px;
+      padding: 0;
+      box-shadow: 0 8px 40px rgba(0,0,0,.18);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .order-modal::backdrop { background: rgba(0,0,0,.45); }
+    .order-modal .modal-body {
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .order-modal .modal-foot {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .om-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 20px;
+      background: var(--bg-alt, #f7f8fa);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+    .om-meta > div { display: flex; flex-direction: column; gap: 2px; }
+    .om-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    .om-status {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .om-cb-label { display: flex; align-items: center; gap: 6px; font-size: .85rem; cursor: pointer; }
+    .om-cancelled { color: var(--red, #e53e3e); }
+    .om-comments { display: flex; flex-direction: column; gap: 6px; }
+    .om-comments textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: .88rem;
+      font-family: inherit;
+      resize: vertical;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .om-comments textarea:focus { outline: none; border-color: var(--navy); }
+    .om-lines-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    .om-lines-table th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; padding: 6px 8px; border-bottom: 2px solid var(--border); }
+    .om-lines-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
+    .om-lines-table tbody tr:last-child td { border-bottom: none; }
+    .om-totals {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 16px;
+      background: var(--bg-alt, #f7f8fa);
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-size: .85rem;
+    }
     tr.cancelled-row .order-id::after { content: ' — CANCELLED'; color: var(--red); }
 
     /* expand row */
@@ -372,6 +456,7 @@
       display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
     }
     .modal-head h3 { font-size: 1rem; font-weight: 600; }
+    .modal-title { font-size: 1rem; font-weight: 600; color: #fff; }
     .modal-close {
       background: none; border: none; color: rgba(255,255,255,.7);
       font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0 4px;
@@ -473,7 +558,6 @@
           <table id="ordersTable">
             <thead>
               <tr>
-                <th style="width:32px"></th>
                 <th style="min-width:160px">Order #</th>
                 <th style="min-width:130px">Store</th>
                 <th style="min-width:90px">Store Code</th>
@@ -490,6 +574,22 @@
         </div>
       </div>
     </div>
+
+    <!-- ── Order detail/edit modal ── -->
+    <dialog class="order-modal" id="orderModal">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title" id="omTitle">Order</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:2px" id="omDate"></div>
+        </div>
+        <button class="modal-close" onclick="closeOrderModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="omBody"></div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeOrderModal()">Cancel</button>
+        <button class="btn btn-primary" id="omSaveBtn" onclick="saveOrderModal()">Save</button>
+      </div>
+    </dialog>
 
     <!-- ── Vendors tab ── -->
     <div class="tab-panel" id="tab-vendors">
@@ -1439,7 +1539,7 @@
       const visible = showCancelled ? allOrders : allOrders.filter(function(o) { return !o.cancelled; });
 
       if (!visible.length) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:28px">'
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px">'
           + (allOrders.length ? 'All orders are cancelled. Check \u201cShow cancelled\u201d to view them.' : 'No orders yet.')
           + '</td></tr>';
         return;
@@ -1462,7 +1562,7 @@
         // ── Group header row ──────────────────────────────
         const groupTr = document.createElement('tr');
         groupTr.className = 'order-group-row';
-        groupTr.innerHTML = '<td colspan="10">'
+        groupTr.innerHTML = '<td colspan="9">'
           + '<span class="order-group-arrow' + (expanded ? ' open' : '') + '">&#9654;</span>'
           + escH(company)
           + '<span class="order-group-meta">' + orders.length + ' order' + (orders.length !== 1 ? 's' : '') + '</span>'
@@ -1471,7 +1571,7 @@
         groupTr.onclick = function() { toggleOrderGroup(company); };
         tbody.appendChild(groupTr);
 
-        // ── Order rows (visible only when group expanded) ─
+        // ── Order rows ────────────────────────────────────
         orders.forEach(function(order) {
           const sc   = order.storeCode ? '<span class="store-code-badge">' + escH(order.storeCode) + '</span>'
                                        + (order.contactName ? ' <span style="color:var(--muted);font-size:.78rem">(' + escH(order.contactName) + ')</span>' : '')
@@ -1484,10 +1584,7 @@
           tr.dataset.group = company;
           tr.style.display = expanded ? '' : 'none';
           tr.innerHTML =
-            '<td style="text-align:center;padding:0 4px">'
-            +   '<button class="expand-btn" onclick="toggleDetail(\'' + oid + '\')">&#9654;</button>'
-            + '</td>'
-            + '<td><span class="order-id">' + oid + '</span></td>'
+            '<td><span class="order-id">' + oid + '</span></td>'
             + '<td style="font-size:.82rem">' + co + '</td>'
             + '<td>' + sc + '</td>'
             + '<td style="text-align:center">' + (order.totalIndividualUnits || '\u2014') + '</td>'
@@ -1499,47 +1596,9 @@
             + '<td><div class="cb-wrap"><input type="checkbox" class="status-cb"' + (order.paymentReceived ? ' checked' : '')
             +   ' onchange="updateStatus(\'' + oid + '\',\'paymentReceived\',this.checked)" /></div></td>'
             + '<td style="text-align:center">'
-            + (order.cancelled
-                ? '<span style="font-size:.74rem;color:var(--red);font-weight:600">Cancelled</span>'
-                : '<button class="btn-cancel-order" onclick="cancelOrder(\'' + oid + '\')">Cancel</button>'
-              )
+            + '<button class="btn-view-order" onclick="openOrderModal(\'' + oid + '\')">View</button>'
             + '</td>';
           tbody.appendChild(tr);
-
-          // ── Detail row (hidden; toggled by expand btn) ─
-          const productRows = order.lines.map(function(l) {
-            return '<tr>'
-              + '<td style="text-align:left">'  + escH(l.name) + '</td>'
-              + '<td style="text-align:left;font-size:.78rem;color:var(--muted)">' + escH(l.sku || '') + '</td>'
-              + '<td style="text-align:center">' + l.qty + ' ' + l.orderUnit + (l.qty !== 1 ? 's' : '') + '</td>'
-              + '<td style="text-align:center">' + l.units + '</td>'
-              + '<td style="text-align:right">$' + Number(l.lineDealer).toFixed(2) + '</td>'
-              + '<td style="text-align:right">$' + Number(l.lineSRP).toFixed(2) + '</td>'
-              + '</tr>';
-          }).join('');
-
-          const detailTr = document.createElement('tr');
-          detailTr.className = 'detail-row';
-          detailTr.id = 'detail-' + oid;
-          detailTr.dataset.group = company;
-          detailTr.style.display = 'none';
-          detailTr.innerHTML = '<td colspan="10"><div class="detail-inner">'
-            + '<div class="order-detail-meta">'
-            + '<span><strong>Date:</strong> '       + fmtDate(order.date) + '</span>'
-            + (order.contactName  ? '<span><strong>Contact:</strong> '    + escH(order.contactName)  + '</span>' : '')
-            + (order.customerEmail? '<span><strong>Email:</strong> '      + escH(order.customerEmail)+ '</span>' : '')
-            + (order.storeCode    ? '<span><strong>Store Code:</strong> ' + escH(order.storeCode)    + '</span>' : '')
-            + '</div>'
-            + (order.comments ? '<div style="margin:8px 0;padding:8px 12px;background:#fffbeb;border-left:3px solid #f6ad55;border-radius:4px;font-size:.85rem"><strong>Comments:</strong> ' + escH(order.comments) + '</div>' : '')
-            + '<table><thead><tr>'
-            + '<th style="text-align:left">Product</th>'
-            + '<th style="text-align:left">SKU</th>'
-            + '<th>Order Qty</th><th>Total Units</th>'
-            + '<th style="text-align:right">Line Dealer</th>'
-            + '<th style="text-align:right">Line SRP</th>'
-            + '</tr></thead><tbody>' + productRows + '</tbody></table>'
-            + '</div></td>';
-          tbody.appendChild(detailTr);
         });
       });
     }
@@ -1549,13 +1608,101 @@
       renderOrders();
     }
 
-    function toggleDetail(orderId) {
-      const detailRow = document.getElementById('detail-' + orderId);
-      const orderRow  = detailRow.previousElementSibling;
-      const btn       = orderRow.querySelector('.expand-btn');
-      const open      = detailRow.style.display !== 'none';
-      detailRow.style.display = open ? 'none' : 'table-row';
-      btn.innerHTML           = open ? '&#9654;' : '&#9660;';
+    let editingOrder = null;
+
+    function openOrderModal(orderId) {
+      const order = allOrders.find(function(o) { return o.orderId === orderId; });
+      if (!order) return;
+      editingOrder = order;
+
+      document.getElementById('omTitle').textContent = 'Order ' + order.orderId;
+      document.getElementById('omDate').textContent  = fmtDate(order.date);
+
+      const productRows = order.lines.map(function(l) {
+        return '<tr>'
+          + '<td>' + escH(l.name) + '</td>'
+          + '<td style="font-size:.78rem;color:var(--muted)">' + escH(l.sku || '') + '</td>'
+          + '<td style="text-align:center">' + l.qty + ' ' + l.orderUnit + (l.qty !== 1 ? 's' : '') + '</td>'
+          + '<td style="text-align:center">' + l.units + '</td>'
+          + '<td style="text-align:right">$' + Number(l.lineDealer).toFixed(2) + '</td>'
+          + '<td style="text-align:right">$' + Number(l.lineSRP).toFixed(2) + '</td>'
+          + '</tr>';
+      }).join('');
+
+      document.getElementById('omBody').innerHTML = `
+        <div class="om-meta">
+          ${order.company     ? '<div><span class="om-label">Company</span><span>' + escH(order.company) + '</span></div>' : ''}
+          ${order.storeCode   ? '<div><span class="om-label">Store Code</span><span class="store-code-badge">' + escH(order.storeCode) + '</span></div>' : ''}
+          ${order.contactName ? '<div><span class="om-label">Contact</span><span>' + escH(order.contactName) + '</span></div>' : ''}
+          ${order.customerEmail ? '<div><span class="om-label">Email</span><span>' + escH(order.customerEmail) + '</span></div>' : ''}
+        </div>
+        <div class="om-status">
+          <label class="om-cb-label"><input type="checkbox" id="om-orderSent"       ${order.orderSent       ? 'checked' : ''}> Order Sent</label>
+          <label class="om-cb-label"><input type="checkbox" id="om-invoiceSent"     ${order.invoiceSent     ? 'checked' : ''}> Invoice Sent</label>
+          <label class="om-cb-label"><input type="checkbox" id="om-paymentReceived" ${order.paymentReceived ? 'checked' : ''}> Payment Received</label>
+          <label class="om-cb-label om-cancelled"><input type="checkbox" id="om-cancelled" ${order.cancelled ? 'checked' : ''}> Cancelled</label>
+        </div>
+        <div class="om-comments">
+          <label class="om-label" for="om-comments-input">Comments</label>
+          <textarea id="om-comments-input" rows="3" placeholder="No comments">${escH(order.comments || '')}</textarea>
+        </div>
+        <table class="om-lines-table">
+          <thead><tr>
+            <th>Product</th><th>SKU</th>
+            <th style="text-align:center">Order Qty</th>
+            <th style="text-align:center">Total Units</th>
+            <th style="text-align:right">Line Dealer</th>
+            <th style="text-align:right">Line SRP</th>
+          </tr></thead>
+          <tbody>${productRows}</tbody>
+        </table>
+        <div class="om-totals">
+          <span>Total Order Units</span>   <strong>${order.totalOrderUnits || '—'}</strong>
+          <span>Total Individual Units</span> <strong>${order.totalIndividualUnits || '—'}</strong>
+          <span>Dealer Total</span>        <strong>$${Number(order.totalDealer).toFixed(2)}</strong>
+          <span>Retail Value (SRP)</span>  <strong style="color:var(--green)">$${Number(order.totalRetail).toFixed(2)}</strong>
+        </div>
+      `;
+
+      document.getElementById('orderModal').showModal();
+    }
+
+    async function saveOrderModal() {
+      if (!editingOrder) return;
+      const btn = document.getElementById('omSaveBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      const oid = editingOrder.orderId;
+
+      const fields = {
+        orderSent:       document.getElementById('om-orderSent').checked,
+        invoiceSent:     document.getElementById('om-invoiceSent').checked,
+        paymentReceived: document.getElementById('om-paymentReceived').checked,
+        cancelled:       document.getElementById('om-cancelled').checked,
+        comments:        document.getElementById('om-comments-input').value.trim(),
+      };
+
+      try {
+        for (const [field, value] of Object.entries(fields)) {
+          if (field === 'comments' || value !== editingOrder[field]) {
+            await updateStatus(oid, field, value);
+          }
+        }
+        Object.assign(editingOrder, fields);
+        renderOrders();
+        document.getElementById('orderModal').close();
+        toast('Order saved.', 'success');
+      } catch (err) {
+        toast('Save failed: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save';
+      }
+    }
+
+    function closeOrderModal() {
+      document.getElementById('orderModal').close();
+      editingOrder = null;
     }
 
     async function updateStatus(orderId, field, value) {

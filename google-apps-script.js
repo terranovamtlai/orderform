@@ -408,7 +408,7 @@ function handleUpdateOrderStatus(e) {
   var value   = payload.value;
 
   // Map field name to column number (1-based)
-  var colMap = { orderSent: 13, invoiceSent: 14, paymentReceived: 15, cancelled: 16 };
+  var colMap = { orderSent: 13, invoiceSent: 14, paymentReceived: 15, cancelled: 16, comments: 21 };
   var col    = colMap[field];
   if (!col) return json({ status: 'error', message: 'Unknown field: ' + field });
 
@@ -419,7 +419,7 @@ function handleUpdateOrderStatus(e) {
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][1]) === orderId + ' — TOTAL') {
-      sheet.getRange(i + 1, col).setValue(value === true);
+      sheet.getRange(i + 1, col).setValue(field === 'comments' ? String(value) : value === true);
       return json({ status: 'ok' });
     }
   }
