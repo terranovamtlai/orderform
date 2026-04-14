@@ -886,7 +886,7 @@
           await fetch(WEBHOOK + '?action=deleteStore&pw=' + apw() + '&vendorCode=' + encodeURIComponent(vendorCode) + '&storeCode=' + encodeURIComponent(oldStoreCode));
         }
         const payload = { vendorCode, storeCode: newCode, company, firstName, lastName, email };
-        const res  = await fetch(WEBHOOK + '?action=saveStore&pw=' + apw() + '&payload=' + encodeURIComponent(JSON.stringify(payload)));
+        const res  = await fetch(WEBHOOK + '?action=saveStore&payload=' + encodeURIComponent(JSON.stringify(payload)));
         const data = await res.json();
         if (data.status !== 'ok') throw new Error(data.message || 'Error');
         // Update in memory

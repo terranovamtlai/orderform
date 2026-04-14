@@ -54,11 +54,10 @@ var ADMIN_ACTIONS = {
   saveProducts:      true,
   getOrders:         true,
   updateOrderStatus: true,
-  getVendor:         true,
   getVendors:        true,
   saveVendors:       true,
-  saveStore:         true,
   deleteStore:       true,
+  // getVendor and saveStore are used by the public order form — no auth required
 };
 
 /* ── Router ──────────────────────────────────────────────── */
