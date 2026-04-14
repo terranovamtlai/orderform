@@ -541,11 +541,12 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
   document.getElementById('dialogHeadMeta').innerHTML = '';
 
   // Reset to review state
-  document.getElementById('dialogTitle').textContent  = 'Review Order';
-  document.getElementById('dialogBody').hidden        = false;
-  document.getElementById('dialogSuccess').hidden     = true;
-  document.getElementById('footReview').hidden        = false;
-  document.getElementById('footConfirmed').hidden     = true;
+  document.getElementById('dialogTitle').textContent      = 'Review Order';
+  document.getElementById('dialogBody').hidden            = false;
+  document.getElementById('dialogComments').hidden        = false;
+  document.getElementById('dialogSuccess').hidden         = true;
+  document.getElementById('footReview').hidden            = false;
+  document.getElementById('footConfirmed').hidden         = true;
   const btn = document.getElementById('btnConfirmSubmit');
   btn.disabled    = false;
   btn.textContent = 'Confirm & Submit Order';
@@ -575,10 +576,12 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
   confirmedOrder = buildOrderData();
   confirmedOrder.storeCode     = currentStore ? currentStore.storeCode : '';
   confirmedOrder.customerEmail = currentStore ? currentStore.email     : '';
+  confirmedOrder.comments      = (document.getElementById('orderComments').value || '').trim();
 
   // Show submitting state in dialog
   document.getElementById('dialogTitle').textContent = 'Submitting Order…';
   document.getElementById('dialogBody').hidden = true;
+  document.getElementById('dialogComments').hidden = true;
   const successEl = document.getElementById('dialogSuccess');
   successEl.innerHTML = '<span style="color:#718096">Please wait — sending your order to Terra Nova…</span>';
   successEl.hidden = false;
@@ -618,6 +621,8 @@ document.getElementById('btnConfirmSubmit').addEventListener('click', async () =
 
 // Start New Order — close dialog (order already cleared)
 document.getElementById('btnNewOrder').addEventListener('click', () => {
+  document.getElementById('orderComments').value = '';
+  document.getElementById('dialogComments').hidden = false;
   document.getElementById('confirmDialog').close();
 });
 
@@ -647,6 +652,7 @@ async function submitToGoogleSheet(data) {
     storeCode:            data.storeCode     || '',
     customerEmail:        data.customerEmail || '',
     contactName:          currentStore ? (currentStore.firstName + ' ' + currentStore.lastName).trim() : '',
+    comments:             data.comments || '',
   };
 
   // Use GET + URL params — POST bodies are silently dropped by Google's

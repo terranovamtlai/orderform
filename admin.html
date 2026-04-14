@@ -1530,6 +1530,7 @@
             + (order.customerEmail? '<span><strong>Email:</strong> '      + escH(order.customerEmail)+ '</span>' : '')
             + (order.storeCode    ? '<span><strong>Store Code:</strong> ' + escH(order.storeCode)    + '</span>' : '')
             + '</div>'
+            + (order.comments ? '<div style="margin:8px 0;padding:8px 12px;background:#fffbeb;border-left:3px solid #f6ad55;border-radius:4px;font-size:.85rem"><strong>Comments:</strong> ' + escH(order.comments) + '</div>' : '')
             + '<table><thead><tr>'
             + '<th style="text-align:left">Product</th>'
             + '<th style="text-align:left">SKU</th>'

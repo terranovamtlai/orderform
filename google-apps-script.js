@@ -256,7 +256,7 @@ function handleSubmitOrder(e) {
       'Dealer/Unit ($)','Line Dealer ($)',
       'SRP/Unit ($)','Line SRP ($)',
       'Order Sent','Invoice Sent','Payment Received','Cancelled',
-      'Company','Vendor Code','Store Code','Customer Email',
+      'Company','Vendor Code','Store Code','Customer Email','Comments',
     ];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
@@ -286,6 +286,7 @@ function handleSubmitOrder(e) {
     data.vendorCode     || '',    // col 18
     data.storeCode      || '',    // col 19
     data.customerEmail  || '',    // col 20
+    data.comments       || '',    // col 21
   ]);
   sheet.getRange(sheet.getLastRow(), 1, 1, 12)
        .setFontStyle('italic')
@@ -331,6 +332,7 @@ function sendOrderEmail(data) {
     + row2('Dealer Total',            '$' + data.totalDealer.toFixed(2))
     + row2('Retail Value (SRP)',     '$' + data.totalRetail.toFixed(2), '#2d9c5e')
     + '</div>'
+    + (data.comments ? '<div style="margin-top:16px;padding:12px 14px;background:#fffbeb;border-left:3px solid #f6ad55;border-radius:4px"><strong style="font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#92400e">Comments</strong><p style="margin:4px 0 0;color:#1a202c;font-size:.9rem">' + data.comments + '</p></div>' : '')
     + '</div></div>';
 
   MailApp.sendEmail({ to: ORDER_EMAIL, subject: 'New Terra Nova Order — ' + data.orderId, htmlBody: html });
@@ -373,6 +375,7 @@ function handleGetOrders() {
         current.vendorCode           = row[17] || '';
         current.storeCode            = row[18] || '';
         current.customerEmail        = row[19] || '';
+        current.comments             = row[20] || '';
         orders.push(current);
         current = null;
       }
