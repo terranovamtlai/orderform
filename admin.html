@@ -892,8 +892,14 @@
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#718096">No vendors yet. Click + Add Vendor to get started.</td></tr>';
         return;
       }
+      const sorted = allVendors.slice().sort(function(a, b) {
+        const ca = (a.company || '').toLowerCase();
+        const cb = (b.company || '').toLowerCase();
+        if (ca !== cb) return ca < cb ? -1 : 1;
+        return (a.code || '').toLowerCase() < (b.code || '').toLowerCase() ? -1 : 1;
+      });
       const rows = [];
-      allVendors.forEach(function(v) {
+      sorted.forEach(function(v) {
         const stores   = allStoreContacts.filter(s => String(s.vendorCode || '').toUpperCase() === String(v.code || '').toUpperCase());
         const expanded = expandedVendors.has(v.code);
         rows.push(makeVendorRow(v, stores, expanded));
