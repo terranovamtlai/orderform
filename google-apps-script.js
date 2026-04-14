@@ -12,6 +12,7 @@
 
 const ORDER_EMAIL       = 'terranova.mtl.ai@gmail.com';
 const SPREADSHEET_ID    = '10H9CTzRHUGK6SrukXklahr0ebQvJR8bueNL8VZEmses';
+const ADMIN_PASSWORD    = 'pickleball2026';
 const ORDERS_SHEET      = 'Orders';
 const PRODUCTS_SHEET    = 'Products';
 const COUNTER_SHEET     = 'Counter';
@@ -59,6 +60,7 @@ function doGet(e) {
     else if (action === 'getVendor')         return handleGetVendor(e);
     else if (action === 'getVendors')        return handleGetVendors();
     else if (action === 'saveVendors')       return handleSaveVendors(e);
+    else if (action === 'verifyPassword')    return handleVerifyPassword(e);
     else if (action === 'lookupStore')       return handleLookupStore(e);
     else if (action === 'saveStore')         return handleSaveStore(e);
     else if (action === 'getStoreContacts')  return handleGetStoreContacts(e);
@@ -130,7 +132,7 @@ function handleSaveProduct(e) {
 
   // Ensure headers exist
   if (sheet.getLastRow() === 0) {
-    var headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category','style','description'];
+    var headers = ['id','name','barcode','sku','srp','cost','dealer','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category','style','description'];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
     sheet.setFrozenRows(1);
@@ -139,7 +141,7 @@ function handleSaveProduct(e) {
   var status = p.status || (p.available !== false ? 'available' : 'unavailable');
   var rowData = [
     p.id, p.name, p.barcode, p.sku,
-    Number(p.srp), Number(p.wholesale),
+    Number(p.srp), Number(p.cost || 0), Number(p.cost || 0) * 1.11,
     p.img, p.orderUnit, Number(p.unitsPerOrder), p.unitLabel,
     status === 'available', status,
     p.vendorCodes || '[]',
@@ -189,7 +191,7 @@ function handleSaveProducts(e) {
   if (!append) {
     // First chunk: clear and write headers
     sheet.clearContents();
-    var headers = ['id','name','barcode','sku','srp','wholesale','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category','style','description'];
+    var headers = ['id','name','barcode','sku','srp','cost','dealer','img','orderUnit','unitsPerOrder','unitLabel','available','status','vendorCodes','category','style','description'];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
     sheet.setFrozenRows(1);
@@ -199,7 +201,7 @@ function handleSaveProducts(e) {
     var status = p.status || (p.available !== false ? 'available' : 'unavailable');
     sheet.appendRow([
       p.id, p.name, p.barcode, p.sku,
-      Number(p.srp), Number(p.wholesale),
+      Number(p.srp), Number(p.cost || 0), Number(p.cost || 0) * 1.11,
       p.img, p.orderUnit, Number(p.unitsPerOrder), p.unitLabel,
       status === 'available',
       status,
@@ -231,7 +233,7 @@ function handleSubmitOrder(e) {
     const headers = [
       'Date','Order ID','Product','SKU','Barcode',
       'Order Unit','Order Qty','Total Units',
-      'Wholesale/Unit ($)','Line Wholesale ($)',
+      'Dealer/Unit ($)','Line Dealer ($)',
       'SRP/Unit ($)','Line SRP ($)',
       'Order Sent','Invoice Sent','Payment Received','Cancelled',
       'Company','Vendor Code','Store Code','Customer Email',
@@ -246,7 +248,7 @@ function handleSubmitOrder(e) {
       data.date, data.orderId,
       line.name, line.sku, line.barcode,
       line.orderUnit, line.qty, line.units,
-      line.wholesaleUnit, line.lineWholesale,
+      line.dealerUnit, line.lineDealer,
       line.srpUnit,       line.lineSRP,
     ]);
   });
@@ -257,7 +259,7 @@ function handleSubmitOrder(e) {
     '— ' + data.lines.length + ' product(s) —',
     '','','',
     data.totalOrderUnits, data.totalIndividualUnits,
-    '', data.totalWholesale,
+    '', data.totalDealer,
     '', data.totalRetail,
     '','','','',                  // status checkboxes (cols 13–16)
     data.vendorCompany  || '',    // col 17
@@ -280,7 +282,7 @@ function sendOrderEmail(data) {
       + td(line.name)
       + td(line.qty + ' ' + line.orderUnit + (line.qty !== 1 ? 's' : ''), 'center')
       + td(line.units + ' ' + (line.unitLabel || 'units'), 'center')
-      + td('$' + line.lineWholesale.toFixed(2), 'right')
+      + td('$' + line.lineDealer.toFixed(2), 'right')
       + '</tr>';
   }).join('');
 
@@ -306,7 +308,7 @@ function sendOrderEmail(data) {
     + '<div style="margin-top:20px;background:#f0f4f8;border-radius:6px;padding:14px 16px">'
     + row2('Total Order Units',      data.totalOrderUnits)
     + row2('Total Individual Units', data.totalIndividualUnits)
-    + row2('Wholesale Total',        '$' + data.totalWholesale.toFixed(2))
+    + row2('Dealer Total',            '$' + data.totalDealer.toFixed(2))
     + row2('Retail Value (SRP)',     '$' + data.totalRetail.toFixed(2), '#2d9c5e')
     + '</div>'
     + '</div></div>';
@@ -325,7 +327,7 @@ function handleGetOrders() {
 
   const rows   = sheet.getDataRange().getValues();
   // Columns: 0=Date 1=OrderID 2=Product 3=SKU 4=Barcode 5=OrderUnit
-  //          6=OrderQty 7=TotalUnits 8=WholesaleUnit 9=LineWholesale 10=SRPUnit 11=LineSRP
+  //          6=OrderQty 7=TotalUnits 8=DealerUnit 9=LineDealer 10=SRPUnit 11=LineSRP
   //          12=OrderSent 13=InvoiceSent 14=PaymentReceived 15=Cancelled
   //          16=Company 17=VendorCode 18=StoreCode 19=CustomerEmail
 
@@ -341,7 +343,7 @@ function handleGetOrders() {
       if (current) {
         current.totalOrderUnits      = row[6];
         current.totalIndividualUnits = row[7];
-        current.totalWholesale       = row[9];
+        current.totalDealer          = row[9];
         current.totalRetail          = row[11];
         current.orderSent            = row[12] === true;
         current.invoiceSent          = row[13] === true;
@@ -365,7 +367,7 @@ function handleGetOrders() {
         orderUnit:    row[5],
         qty:          row[6],
         units:        row[7],
-        lineWholesale: row[9],
+        lineDealer: row[9],
         lineSRP:      row[11],
       });
     }
@@ -611,6 +613,15 @@ function handleDeleteStore(e) {
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */
+/* ── Admin password verification ─────────────────────────── */
+function handleVerifyPassword(e) {
+  var pw = e && e.parameter && e.parameter.pw ? e.parameter.pw : '';
+  if (pw === ADMIN_PASSWORD) {
+    return json({ ok: true });
+  }
+  return json({ ok: false });
+}
+
 function json(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))

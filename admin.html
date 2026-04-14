@@ -478,7 +478,7 @@
                 <th style="min-width:130px">Store</th>
                 <th style="min-width:90px">Store Code</th>
                 <th style="width:90px">Total Units</th>
-                <th style="width:110px;text-align:right">Wholesale</th>
+                <th style="width:110px;text-align:right">Dealer</th>
                 <th style="width:64px">Sent</th>
                 <th style="width:64px">Invoice</th>
                 <th style="width:72px">Payment</th>
@@ -542,9 +542,9 @@
         <label class="modal-label">Description</label>
         <textarea class="modal-input" id="m-description" rows="4" placeholder="Product description…" style="resize:vertical;font-family:inherit;line-height:1.5"></textarea>
       </div>
-      <!-- Style -->
+      <!-- Item -->
       <div class="modal-field">
-        <label class="modal-label">Style</label>
+        <label class="modal-label">Item</label>
         <input class="modal-input" id="m-style" type="text" placeholder="e.g. Unisex Crew, Women's Low-Cut" />
       </div>
       <!-- Barcode / SKU -->
@@ -565,8 +565,12 @@
           <input class="modal-input" id="m-srp" type="number" step="0.01" min="0" />
         </div>
         <div class="modal-field">
-          <label class="modal-label">Wholesale (per unit, $)</label>
-          <input class="modal-input" id="m-wholesale" type="number" step="0.01" min="0" />
+          <label class="modal-label">Cost (per unit, $)</label>
+          <input class="modal-input" id="m-cost" type="number" step="0.01" min="0" oninput="updateDealerDisplay()" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Dealer (auto: cost × 1.11)</label>
+          <div class="modal-input" id="m-dealer-display" style="background:var(--bg);color:var(--muted);cursor:not-allowed">—</div>
         </div>
       </div>
       <!-- Order unit -->
@@ -633,17 +637,16 @@
 
   <script>
     const WEBHOOK     = 'https://script.google.com/macros/s/AKfycbwvveBT8M11c2gCZ0utPNySEQtwtbH2G7OxDePMeX41DkeC6Jr3bSiIfBxcRhKftcZ1Wg/exec';
-    const PASSWORD    = 'pickleball2026';
     const SESSION_KEY = 'tn_admin_auth';
 
     const DEFAULTS = [
-      { id:1, name:'Bacon Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image2.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
-      { id:2, name:'Ramen Instant Socks',             barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image3.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
-      { id:3, name:'Beef Jerky Socks',                barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image4.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
-      { id:4, name:'Greatest Hits Vinyl Record Socks',barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image7.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
-      { id:5, name:'Burger Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image8.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
-      { id:6, name:'Pickles Socks',                   barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image9.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
-      { id:7, name:'Socks With Hops',                 barcode:'644197322967', sku:'687 0362', srp:15.99, wholesale:11.90, img:'image11.png', orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:1, name:'Bacon Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, cost:0, img:'image2.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:2, name:'Ramen Instant Socks',             barcode:'644197322967', sku:'687 0362', srp:15.99, cost:0, img:'image3.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:3, name:'Beef Jerky Socks',                barcode:'644197322967', sku:'687 0362', srp:15.99, cost:0, img:'image4.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:4, name:'Greatest Hits Vinyl Record Socks',barcode:'644197322967', sku:'687 0362', srp:15.99, cost:0, img:'image7.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:5, name:'Burger Socks',                    barcode:'644197322967', sku:'687 0362', srp:15.99, cost:0, img:'image8.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:6, name:'Pickles Socks',                   barcode:'644197322967', sku:'687 0362', srp:15.99, cost:0, img:'image9.png',  orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
+      { id:7, name:'Socks With Hops',                 barcode:'644197322967', sku:'687 0362', srp:15.99, cost:0, img:'image11.png', orderUnit:'display', unitsPerOrder:6, unitLabel:'pairs', category:'Gift Novelties', status:'available', vendorCodes:'[]' },
     ];
 
     /* ── Date formatter ── */
@@ -659,16 +662,29 @@
     /* ════════════════════════════════════════════════════════
        AUTH
     ════════════════════════════════════════════════════════ */
-    function login() {
-      if (document.getElementById('pwInput').value === PASSWORD) {
-        sessionStorage.setItem(SESSION_KEY, '1');
-        document.getElementById('loginScreen').style.display  = 'none';
-        document.getElementById('adminContent').style.display = 'block';
-        loadProducts();
-      } else {
+    async function login() {
+      const pw  = document.getElementById('pwInput').value;
+      const btn = document.querySelector('#loginScreen button');
+      btn.disabled = true;
+      try {
+        const res  = await fetch(WEBHOOK + '?action=verifyPassword&pw=' + encodeURIComponent(pw));
+        const data = await res.json();
+        if (data.ok) {
+          sessionStorage.setItem(SESSION_KEY, '1');
+          document.getElementById('loginScreen').style.display  = 'none';
+          document.getElementById('adminContent').style.display = 'block';
+          loadProducts();
+        } else {
+          document.getElementById('loginError').style.display = 'block';
+          document.getElementById('pwInput').value = '';
+          document.getElementById('pwInput').focus();
+        }
+      } catch (err) {
         document.getElementById('loginError').style.display = 'block';
         document.getElementById('pwInput').value = '';
         document.getElementById('pwInput').focus();
+      } finally {
+        btn.disabled = false;
       }
     }
 
@@ -1091,7 +1107,8 @@
           ...p,
           id:            p.id || (i + 1),
           srp:           Number(p.srp),
-          wholesale:     Number(p.wholesale),
+          cost:          Number(p.cost || 0),
+          dealer:        Number(p.cost || 0) * 1.11,
           unitsPerOrder: Number(p.unitsPerOrder),
           available:     p.available !== false && p.available !== 'false' && p.available !== 'FALSE',
           status:        p.status || 'available',
@@ -1144,9 +1161,9 @@
                     <thead><tr>
                       <th style="width:56px"></th>
                       <th>Name</th>
-                      <th>Style</th>
+                      <th>Item</th>
                       <th>Barcode / SKU</th>
-                      <th>SRP / Wholesale</th>
+                      <th>SRP / Cost / Dealer</th>
                       <th>Order Unit</th>
                       <th>Status</th>
                       <th style="width:110px"></th>
@@ -1167,7 +1184,7 @@
                           </td>
                           <td class="prod-price">
                             <strong>$${Number(p.srp).toFixed(2)}</strong>
-                            <small>&nbsp;/&nbsp;$${Number(p.wholesale).toFixed(2)}</small>
+                            <small>&nbsp;/&nbsp;$${Number(p.cost || 0).toFixed(2)}&nbsp;/&nbsp;$${Number(p.dealer).toFixed(2)}</small>
                           </td>
                           <td><span style="font-size:.8rem">${p.orderUnit} of ${p.unitsPerOrder} ${p.unitLabel}</span></td>
                           <td>
@@ -1216,11 +1233,17 @@
       }
     }
 
+    /* ── Dealer auto-calc ── */
+    function updateDealerDisplay() {
+      const cost = parseFloat(document.getElementById('m-cost').value) || 0;
+      document.getElementById('m-dealer-display').textContent = '$' + (cost * 1.11).toFixed(2);
+    }
+
     /* ── Product modal ── */
     function openProductModal(idx) {
       editingIdx = idx;
       const p = idx !== null ? allProducts[idx] : {
-        name:'', barcode:'', sku:'', srp:'', wholesale:'',
+        name:'', barcode:'', sku:'', srp:'', cost:'',
         img:'image1.png', orderUnit:'display', unitsPerOrder:6,
         unitLabel:'pairs', status:'available',
         category: allCategories[0] || 'Gift Novelties', vendorCodes:'[]',
@@ -1230,7 +1253,8 @@
       document.getElementById('m-barcode').value            = p.barcode        || '';
       document.getElementById('m-sku').value                = p.sku            || '';
       document.getElementById('m-srp').value                = p.srp            || '';
-      document.getElementById('m-wholesale').value          = p.wholesale      || '';
+      document.getElementById('m-cost').value               = p.cost           || '';
+      updateDealerDisplay();
       document.getElementById('m-orderUnit').value          = p.orderUnit      || 'display';
       document.getElementById('m-unitsPerOrder').value      = p.unitsPerOrder  || 6;
       document.getElementById('m-unitLabel').value          = p.unitLabel      || 'pairs';
@@ -1275,7 +1299,8 @@
         barcode:       document.getElementById('m-barcode').value.trim(),
         sku:           document.getElementById('m-sku').value.trim(),
         srp:           parseFloat(document.getElementById('m-srp').value) || 0,
-        wholesale:     parseFloat(document.getElementById('m-wholesale').value) || 0,
+        cost:          parseFloat(document.getElementById('m-cost').value) || 0,
+        dealer:        (parseFloat(document.getElementById('m-cost').value) || 0) * 1.11,
         img:           imgRaw,
         orderUnit:     document.getElementById('m-orderUnit').value,
         unitsPerOrder: parseInt(document.getElementById('m-unitsPerOrder').value) || 1,
@@ -1419,7 +1444,7 @@
       groups.forEach(function(company) {
         const orders   = groupMap[company];
         const expanded = expandedOrderGroups.has(company);
-        const total    = orders.reduce(function(s, o) { return s + Number(o.totalWholesale || 0); }, 0);
+        const total    = orders.reduce(function(s, o) { return s + Number(o.totalDealer || 0); }, 0);
 
         // ── Group header row ──────────────────────────────
         const groupTr = document.createElement('tr');
@@ -1453,7 +1478,7 @@
             + '<td style="font-size:.82rem">' + co + '</td>'
             + '<td>' + sc + '</td>'
             + '<td style="text-align:center">' + (order.totalIndividualUnits || '\u2014') + '</td>'
-            + '<td style="text-align:right" class="order-total">$' + Number(order.totalWholesale).toFixed(2) + '</td>'
+            + '<td style="text-align:right" class="order-total">$' + Number(order.totalDealer).toFixed(2) + '</td>'
             + '<td><div class="cb-wrap"><input type="checkbox" class="status-cb"' + (order.orderSent       ? ' checked' : '')
             +   ' onchange="updateStatus(\'' + oid + '\',\'orderSent\',this.checked)" /></div></td>'
             + '<td><div class="cb-wrap"><input type="checkbox" class="status-cb"' + (order.invoiceSent     ? ' checked' : '')
@@ -1475,7 +1500,7 @@
               + '<td style="text-align:left;font-size:.78rem;color:var(--muted)">' + escH(l.sku || '') + '</td>'
               + '<td style="text-align:center">' + l.qty + ' ' + l.orderUnit + (l.qty !== 1 ? 's' : '') + '</td>'
               + '<td style="text-align:center">' + l.units + '</td>'
-              + '<td style="text-align:right">$' + Number(l.lineWholesale).toFixed(2) + '</td>'
+              + '<td style="text-align:right">$' + Number(l.lineDealer).toFixed(2) + '</td>'
               + '<td style="text-align:right">$' + Number(l.lineSRP).toFixed(2) + '</td>'
               + '</tr>';
           }).join('');
@@ -1496,7 +1521,7 @@
             + '<th style="text-align:left">Product</th>'
             + '<th style="text-align:left">SKU</th>'
             + '<th>Order Qty</th><th>Total Units</th>'
-            + '<th style="text-align:right">Line Wholesale</th>'
+            + '<th style="text-align:right">Line Dealer</th>'
             + '<th style="text-align:right">Line SRP</th>'
             + '</tr></thead><tbody>' + productRows + '</tbody></table>'
             + '</div></td>';
